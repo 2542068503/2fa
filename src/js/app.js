@@ -1,5 +1,5 @@
 import { initTheme, toggleTheme } from './theme.js';
-import { deriveKeysWithWorker, encryptVaultPayload, decryptVaultPayload, base64ToBuffer, bufferToBase64 } from './crypto.js';
+import { deriveDeterministicSalts, deriveKeysWithWorker, encryptVaultPayload, decryptVaultPayload, base64ToBuffer, bufferToBase64 } from './crypto.js';
 import { generateTOTP, getSecondsRemaining } from './totp.js';
 import { getStoredEncryptedVault, saveEncryptedVaultLocal, fetchCloudVault, pushCloudVault } from './storage.js';
 import { scanQrCodeFromImageFile, parseOtpauthUri } from './qr-parser.js';
@@ -7,6 +7,8 @@ import { scanQrCodeFromImageFile, parseOtpauthUri } from './qr-parser.js';
 let sessionState = {
   kEnc: null,
   kAuthHash: null,
+  saltEncB64: '',
+  saltAuthB64: '',
   vault: null,
   timeOffsetMs: 0,
   clipboardTimer: null,
@@ -46,7 +48,6 @@ const confirmNewPasswordInput = document.getElementById('confirmNewPasswordInput
 const settingsError = document.getElementById('settingsError');
 
 initTheme();
-checkExistingVaultStatus();
 setupServiceWorker();
 
 // Theme Switcher
@@ -66,15 +67,6 @@ togglePwVisibility.addEventListener('click', () => {
   masterPasswordInput.type = isPw ? 'text' : 'password';
 });
 
-function checkExistingVaultStatus() {
-  const localVault = getStoredEncryptedVault();
-  if (!localVault) {
-    document.getElementById('lockTitle').textContent = '创建主密码库';
-    document.getElementById('lockDesc').textContent = '第一次使用？请设置主密码（Master Password）来加密保护您的验证码。';
-    unlockBtn.querySelector('span').textContent = '创建密码库';
-  }
-}
-
 unlockBtn.addEventListener('click', handleUnlockOrCreate);
 masterPasswordInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') handleUnlockOrCreate();
@@ -84,45 +76,56 @@ async function handleUnlockOrCreate() {
   const password = masterPasswordInput.value;
   if (!password) return;
 
-  unlockBtn.querySelector('span').textContent = '解密计算中...';
+  unlockBtn.querySelector('span').textContent = '同步解密中...';
   unlockBtn.disabled = true;
   lockError.style.display = 'none';
 
   try {
-    let localEncrypted = getStoredEncryptedVault();
-    let saltEnc, saltAuth;
-
-    if (!localEncrypted) {
-      saltEnc = window.crypto.getRandomValues(new Uint8Array(16));
-      saltAuth = window.crypto.getRandomValues(new Uint8Array(16));
-    } else {
-      saltEnc = base64ToBuffer(localEncrypted.saltEnc);
-      saltAuth = base64ToBuffer(localEncrypted.saltAuth);
-    }
-
+    const { saltEnc, saltAuth } = await deriveDeterministicSalts(password);
     const { kEnc, kAuthHash } = await deriveKeysWithWorker(password, saltEnc, saltAuth);
+
     sessionState.kEnc = kEnc;
     sessionState.kAuthHash = kAuthHash;
+    sessionState.saltEncB64 = bufferToBase64(saltEnc);
+    sessionState.saltAuthB64 = bufferToBase64(saltAuth);
 
-    if (!localEncrypted) {
+    // Query Cloud KV with kAuthHash
+    const { data: cloudData, timeOffsetMs } = await fetchCloudVault(kAuthHash);
+    sessionState.timeOffsetMs = timeOffsetMs;
+
+    let decrypted = null;
+    if (cloudData && cloudData.ciphertext) {
+      try {
+        decrypted = await decryptVaultPayload(cloudData.iv, cloudData.ciphertext, kEnc);
+        saveEncryptedVaultLocal(cloudData);
+      } catch (err) {
+        // AES-GCM tag mismatch -> wrong password
+        throw new Error('INVALID_MAGIC');
+      }
+    }
+
+    if (!decrypted) {
+      const localEncrypted = getStoredEncryptedVault();
+      if (localEncrypted && localEncrypted.ciphertext) {
+        try {
+          decrypted = await decryptVaultPayload(localEncrypted.iv, localEncrypted.ciphertext, kEnc);
+        } catch (err) {
+          throw new Error('INVALID_MAGIC');
+        }
+      }
+    }
+
+    if (!decrypted) {
+      // First time vault creation for this master password
       sessionState.vault = {
         magic: 'VALID_VAULT_V1',
         version: 1,
         updatedAt: Date.now(),
         accounts: []
       };
-      await saveVault(bufferToBase64(saltEnc), bufferToBase64(saltAuth));
+      await saveVault();
     } else {
-      const parsed = await decryptVaultPayload(localEncrypted.iv, localEncrypted.ciphertext, kEnc);
-      sessionState.vault = parsed;
-
-      // Sync cloud in background
-      const { data, timeOffsetMs } = await fetchCloudVault(kAuthHash);
-      sessionState.timeOffsetMs = timeOffsetMs;
-      if (data && data.updatedAt > sessionState.vault.updatedAt) {
-        sessionState.vault = await decryptVaultPayload(data.iv, data.ciphertext, kEnc);
-        saveEncryptedVaultLocal(data);
-      }
+      sessionState.vault = decrypted;
     }
 
     showDashboard();
@@ -146,15 +149,14 @@ function showDashboard() {
   startTimerLoop();
 }
 
-async function saveVault(saltEncB64, saltAuthB64) {
+async function saveVault() {
   sessionState.vault.updatedAt = Date.now();
   const encrypted = await encryptVaultPayload(sessionState.vault, sessionState.kEnc);
 
-  const localVault = getStoredEncryptedVault();
   const payload = {
     version: 1,
-    saltEnc: saltEncB64 || (localVault ? localVault.saltEnc : ''),
-    saltAuth: saltAuthB64 || (localVault ? localVault.saltAuth : ''),
+    saltEnc: sessionState.saltEncB64,
+    saltAuth: sessionState.saltAuthB64,
     iv: encrypted.iv,
     ciphertext: encrypted.ciphertext,
     updatedAt: sessionState.vault.updatedAt
@@ -245,7 +247,7 @@ function renderAccountListStructure() {
   }
 }
 
-// In-Place Update TOTP codes & timer rings every 1s without rebuilding DOM (zero jittering)
+// In-Place Update TOTP codes & timer rings every 1s without rebuilding DOM
 async function updateTotpCodesInPlace() {
   if (!sessionState.vault) return;
 
@@ -362,24 +364,25 @@ async function handleMasterPasswordChange() {
   settingsError.style.display = 'none';
 
   try {
-    const localVault = getStoredEncryptedVault();
-    const currentSaltEnc = base64ToBuffer(localVault.saltEnc);
-    const currentSaltAuth = base64ToBuffer(localVault.saltAuth);
-
-    // Verify current password by deriving keys and attempting payload check
+    const { saltEnc: currentSaltEnc, saltAuth: currentSaltAuth } = await deriveDeterministicSalts(currentPw);
     const { kEnc: verifyKEnc } = await deriveKeysWithWorker(currentPw, currentSaltEnc, currentSaltAuth);
-    await decryptVaultPayload(localVault.iv, localVault.ciphertext, verifyKEnc);
+    
+    // Verify current master password
+    const localVault = getStoredEncryptedVault();
+    if (localVault && localVault.ciphertext) {
+      await decryptVaultPayload(localVault.iv, localVault.ciphertext, verifyKEnc);
+    }
 
-    // Current password verified! Now generate new salts & derive new keys
-    const newSaltEnc = window.crypto.getRandomValues(new Uint8Array(16));
-    const newSaltAuth = window.crypto.getRandomValues(new Uint8Array(16));
-
+    // Re-encrypt vault under new master password
+    const { saltEnc: newSaltEnc, saltAuth: newSaltAuth } = await deriveDeterministicSalts(newPw);
     const { kEnc: kEncNew, kAuthHash: kAuthHashNew } = await deriveKeysWithWorker(newPw, newSaltEnc, newSaltAuth);
 
     sessionState.kEnc = kEncNew;
     sessionState.kAuthHash = kAuthHashNew;
+    sessionState.saltEncB64 = bufferToBase64(newSaltEnc);
+    sessionState.saltAuthB64 = bufferToBase64(newSaltAuth);
 
-    await saveVault(bufferToBase64(newSaltEnc), bufferToBase64(newSaltAuth));
+    await saveVault();
 
     settingsModal.classList.remove('active');
     showToast('主密码修改成功！');

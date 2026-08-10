@@ -24,8 +24,22 @@ export function base64ToBuffer(b64) {
   return bytes;
 }
 
-export function generateSalt(length = 16) {
-  return window.crypto.getRandomValues(new Uint8Array(length));
+// Deterministic Salt Generator from Master Password (enables seamless multi-device zero-knowledge lookup)
+export async function deriveDeterministicSalts(password) {
+  const enc = new TextEncoder();
+  const saltEncBuf = await window.crypto.subtle.digest(
+    'SHA-256',
+    enc.encode(password + ':2FA_SALT_ENC_STATIC_V1')
+  );
+  const saltAuthBuf = await window.crypto.subtle.digest(
+    'SHA-256',
+    enc.encode(password + ':2FA_SALT_AUTH_STATIC_V1')
+  );
+
+  return {
+    saltEnc: new Uint8Array(saltEncBuf).subarray(0, 16),
+    saltAuth: new Uint8Array(saltAuthBuf).subarray(0, 16)
+  };
 }
 
 // Derive keys using Web Worker
