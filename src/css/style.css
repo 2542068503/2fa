@@ -33,7 +33,7 @@
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   
-  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 [data-theme="dark"] {
@@ -225,7 +225,6 @@ body {
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35);
 }
 
@@ -316,6 +315,7 @@ body {
   gap: 1rem;
 }
 
+/* Stable Card Layout (No translateY to prevent hover jitter on timer update) */
 .account-card-pro {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -324,15 +324,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  transition: var(--transition);
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .account-card-pro:hover {
   border-color: var(--primary);
   background: var(--bg-card-hover);
-  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
@@ -344,6 +344,8 @@ body {
   display: flex;
   align-items: center;
   gap: 1rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .service-avatar {
@@ -360,6 +362,10 @@ body {
   flex-shrink: 0;
 }
 
+.account-details {
+  min-width: 0;
+}
+
 .account-details .issuer-name {
   font-weight: 600;
   font-size: 1.05rem;
@@ -367,22 +373,31 @@ body {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .account-details .account-handle {
   font-size: 0.85rem;
   color: var(--text-secondary);
   margin-top: 0.15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .totp-section {
   display: flex;
   align-items: center;
   gap: 1.5rem;
+  flex-shrink: 0;
 }
 
+/* Tabular nums to prevent layout width shift when numbers change */
 .totp-code-display {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 1.85rem;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -391,14 +406,16 @@ body {
   cursor: pointer;
   padding: 0.25rem 0.5rem;
   border-radius: var(--radius-sm);
-  transition: var(--transition);
+  transition: background-color 0.2s ease;
+  min-width: 140px;
+  text-align: center;
 }
 
 .totp-code-display:hover {
   background: var(--primary-light);
 }
 
-/* Progress Ring Timer */
+/* Progress Ring Timer with Tabular Nums */
 .timer-ring-wrapper {
   position: relative;
   width: 36px;
@@ -406,6 +423,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .timer-ring-svg {
@@ -436,9 +454,10 @@ body {
 
 .timer-ring-text {
   position: absolute;
-  font-size: 0.725rem;
+  font-size: 0.75rem;
   font-weight: 600;
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
 }
 
@@ -547,5 +566,6 @@ body {
   }
   .totp-code-display {
     font-size: 1.4rem;
+    min-width: auto;
   }
 }

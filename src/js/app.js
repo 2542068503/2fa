@@ -10,7 +10,8 @@ let sessionState = {
   vault: null,
   timeOffsetMs: 0,
   clipboardTimer: null,
-  visibilityTimer: null
+  visibilityTimer: null,
+  timerInterval: null
 };
 
 // DOM Elements
@@ -21,6 +22,7 @@ const togglePwVisibility = document.getElementById('togglePwVisibility');
 const unlockBtn = document.getElementById('unlockBtn');
 const lockError = document.getElementById('lockError');
 const lockBtn = document.getElementById('lockBtn');
+const settingsBtn = document.getElementById('settingsBtn');
 const themeToggleBtn = document.getElementById('themeToggleBtn');
 const accountList = document.getElementById('accountList');
 const searchInput = document.getElementById('searchInput');
@@ -31,6 +33,17 @@ const cancelAddBtn = document.getElementById('cancelAddBtn');
 const saveAccountBtn = document.getElementById('saveAccountBtn');
 const qrFileInput = document.getElementById('qrFileInput');
 const toast = document.getElementById('toast');
+const toastText = document.getElementById('toastText');
+
+// Settings Modal Elements
+const settingsModal = document.getElementById('settingsModal');
+const closeSettingsModalBtn = document.getElementById('closeSettingsModalBtn');
+const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
+const updatePasswordBtn = document.getElementById('updatePasswordBtn');
+const currentPasswordInput = document.getElementById('currentPasswordInput');
+const newPasswordInput = document.getElementById('newPasswordInput');
+const confirmNewPasswordInput = document.getElementById('confirmNewPasswordInput');
+const settingsError = document.getElementById('settingsError');
 
 initTheme();
 checkExistingVaultStatus();
@@ -126,8 +139,10 @@ function showDashboard() {
   lockView.style.display = 'none';
   dashboardView.style.display = 'block';
   lockBtn.style.display = 'inline-flex';
+  settingsBtn.style.display = 'inline-flex';
   masterPasswordInput.value = '';
-  renderAccounts();
+  renderAccountListStructure();
+  updateTotpCodesInPlace();
   startTimerLoop();
 }
 
@@ -159,7 +174,8 @@ function formatTotpCode(code) {
   return code;
 }
 
-async function renderAccounts() {
+// Build DOM structure ONLY when accounts list changes (prevents hover jittering)
+function renderAccountListStructure() {
   if (!sessionState.vault) return;
   accountList.innerHTML = '';
   const filter = searchInput.value.toLowerCase().trim();
@@ -173,25 +189,11 @@ async function renderAccounts() {
     }
     count++;
 
-    const codeRaw = await generateTOTP(acc.secret, {
-      algo: acc.algo || 'SHA1',
-      digits: acc.digits || 6,
-      period: acc.period || 30,
-      timeOffsetMs: sessionState.timeOffsetMs
-    });
-
-    const formattedCode = formatTotpCode(codeRaw);
-    const period = acc.period || 30;
-    const rem = getSecondsRemaining(period, sessionState.timeOffsetMs);
-
-    // Calculate stroke dashoffset for 36px ring (radius 14, circumference ~88)
-    const strokeOffset = 88 * (1 - rem / period);
-    const isWarning = rem <= 5;
-
     const initial = (acc.issuer || 'U').substring(0, 1).toUpperCase();
 
     const card = document.createElement('div');
     card.className = `account-card-pro ${acc.pinned ? 'pinned' : ''}`;
+    card.dataset.accId = acc.id;
     card.innerHTML = `
       <div class="account-info">
         <div class="service-avatar">${initial}</div>
@@ -204,23 +206,28 @@ async function renderAccounts() {
         </div>
       </div>
       <div class="totp-section">
-        <div class="totp-code-display" title="点击复制">${formattedCode}</div>
+        <div class="totp-code-display" title="点击复制">------</div>
         <div class="timer-ring-wrapper">
           <svg class="timer-ring-svg" viewBox="0 0 36 36">
             <circle class="timer-ring-bg" cx="18" cy="18" r="14"></circle>
-            <circle class="timer-ring-circle ${isWarning ? 'warning' : ''}" cx="18" cy="18" r="14" style="stroke-dashoffset: ${strokeOffset}"></circle>
+            <circle class="timer-ring-circle" cx="18" cy="18" r="14"></circle>
           </svg>
-          <span class="timer-ring-text">${rem}</span>
+          <span class="timer-ring-text">--</span>
         </div>
       </div>
     `;
 
     card.querySelector('.totp-code-display').addEventListener('click', (e) => {
       e.stopPropagation();
-      copyToClipboard(codeRaw);
+      const codeText = card.querySelector('.totp-code-display').dataset.rawCode;
+      if (codeText) copyToClipboard(codeText);
     });
 
-    card.addEventListener('click', () => copyToClipboard(codeRaw));
+    card.addEventListener('click', () => {
+      const codeText = card.querySelector('.totp-code-display').dataset.rawCode;
+      if (codeText) copyToClipboard(codeText);
+    });
+
     accountList.appendChild(card);
   }
 
@@ -238,10 +245,55 @@ async function renderAccounts() {
   }
 }
 
-function copyToClipboard(text) {
-  navigator.clipboard.writeText(text);
+// In-Place Update TOTP codes & timer rings every 1s without rebuilding DOM (zero jittering)
+async function updateTotpCodesInPlace() {
+  if (!sessionState.vault) return;
+
+  const cardElements = accountList.querySelectorAll('.account-card-pro');
+  for (const card of cardElements) {
+    const accId = card.dataset.accId;
+    const acc = sessionState.vault.accounts.find((a) => a.id === accId);
+    if (!acc) continue;
+
+    const codeRaw = await generateTOTP(acc.secret, {
+      algo: acc.algo || 'SHA1',
+      digits: acc.digits || 6,
+      period: acc.period || 30,
+      timeOffsetMs: sessionState.timeOffsetMs
+    });
+
+    const formattedCode = formatTotpCode(codeRaw);
+    const period = acc.period || 30;
+    const rem = getSecondsRemaining(period, sessionState.timeOffsetMs);
+
+    const codeDisplay = card.querySelector('.totp-code-display');
+    const ringCircle = card.querySelector('.timer-ring-circle');
+    const ringText = card.querySelector('.timer-ring-text');
+
+    codeDisplay.textContent = formattedCode;
+    codeDisplay.dataset.rawCode = codeRaw;
+    ringText.textContent = rem;
+
+    const strokeOffset = 88 * (1 - rem / period);
+    ringCircle.style.strokeDashoffset = strokeOffset;
+
+    if (rem <= 5) {
+      ringCircle.classList.add('warning');
+    } else {
+      ringCircle.classList.remove('warning');
+    }
+  }
+}
+
+function showToast(msg) {
+  toastText.textContent = msg;
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text);
+  showToast('验证码已复制到剪贴板！');
 
   if (sessionState.clipboardTimer) clearTimeout(sessionState.clipboardTimer);
   sessionState.clipboardTimer = setTimeout(() => {
@@ -250,7 +302,8 @@ function copyToClipboard(text) {
 }
 
 function startTimerLoop() {
-  setInterval(renderAccounts, 1000);
+  if (sessionState.timerInterval) clearInterval(sessionState.timerInterval);
+  sessionState.timerInterval = setInterval(updateTotpCodesInPlace, 1000);
 }
 
 // Lock
@@ -260,12 +313,86 @@ function lockVault() {
   sessionState.kEnc = null;
   sessionState.kAuthHash = null;
   sessionState.vault = null;
+  if (sessionState.timerInterval) clearInterval(sessionState.timerInterval);
   dashboardView.style.display = 'none';
   lockView.style.display = 'block';
   lockBtn.style.display = 'none';
+  settingsBtn.style.display = 'none';
 }
 
-// Hotkeys: '/' focus search, 'Esc' lock
+// Settings Modal & Master Password Change Flow
+settingsBtn.addEventListener('click', () => {
+  currentPasswordInput.value = '';
+  newPasswordInput.value = '';
+  confirmNewPasswordInput.value = '';
+  settingsError.style.display = 'none';
+  settingsModal.classList.add('active');
+});
+
+closeSettingsModalBtn.addEventListener('click', () => settingsModal.classList.remove('active'));
+cancelSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('active'));
+
+updatePasswordBtn.addEventListener('click', handleMasterPasswordChange);
+
+async function handleMasterPasswordChange() {
+  const currentPw = currentPasswordInput.value;
+  const newPw = newPasswordInput.value;
+  const confirmPw = confirmNewPasswordInput.value;
+
+  if (!currentPw || !newPw || !confirmPw) {
+    settingsError.textContent = '请完整填写所有密码项！';
+    settingsError.style.display = 'block';
+    return;
+  }
+
+  if (newPw !== confirmPw) {
+    settingsError.textContent = '两次输入的新密码不一致！';
+    settingsError.style.display = 'block';
+    return;
+  }
+
+  if (newPw.length < 4) {
+    settingsError.textContent = '新密码长度至少需要 4 位！';
+    settingsError.style.display = 'block';
+    return;
+  }
+
+  updatePasswordBtn.disabled = true;
+  updatePasswordBtn.textContent = '密钥重新派生中...';
+  settingsError.style.display = 'none';
+
+  try {
+    const localVault = getStoredEncryptedVault();
+    const currentSaltEnc = base64ToBuffer(localVault.saltEnc);
+    const currentSaltAuth = base64ToBuffer(localVault.saltAuth);
+
+    // Verify current password by deriving keys and attempting payload check
+    const { kEnc: verifyKEnc } = await deriveKeysWithWorker(currentPw, currentSaltEnc, currentSaltAuth);
+    await decryptVaultPayload(localVault.iv, localVault.ciphertext, verifyKEnc);
+
+    // Current password verified! Now generate new salts & derive new keys
+    const newSaltEnc = window.crypto.getRandomValues(new Uint8Array(16));
+    const newSaltAuth = window.crypto.getRandomValues(new Uint8Array(16));
+
+    const { kEnc: kEncNew, kAuthHash: kAuthHashNew } = await deriveKeysWithWorker(newPw, newSaltEnc, newSaltAuth);
+
+    sessionState.kEnc = kEncNew;
+    sessionState.kAuthHash = kAuthHashNew;
+
+    await saveVault(bufferToBase64(newSaltEnc), bufferToBase64(newSaltAuth));
+
+    settingsModal.classList.remove('active');
+    showToast('主密码修改成功！');
+  } catch (err) {
+    settingsError.textContent = err.message === 'INVALID_MAGIC' ? '当前主密码不正确！' : '修改失败: ' + err.message;
+    settingsError.style.display = 'block';
+  } finally {
+    updatePasswordBtn.disabled = false;
+    updatePasswordBtn.textContent = '确认更新密码';
+  }
+}
+
+// Hotkeys: '/' focus search, 'Esc' lock or close modals
 document.addEventListener('keydown', (e) => {
   if (e.key === '/' && document.activeElement !== searchInput && document.activeElement !== masterPasswordInput) {
     e.preventDefault();
@@ -274,6 +401,8 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (addModal.classList.contains('active')) {
       addModal.classList.remove('active');
+    } else if (settingsModal.classList.contains('active')) {
+      settingsModal.classList.remove('active');
     } else if (sessionState.vault) {
       lockVault();
     }
@@ -292,7 +421,10 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // Search input
-searchInput.addEventListener('input', renderAccounts);
+searchInput.addEventListener('input', () => {
+  renderAccountListStructure();
+  updateTotpCodesInPlace();
+});
 
 // Add modal
 addAccountBtn.addEventListener('click', () => addModal.classList.add('active'));
@@ -323,7 +455,9 @@ saveAccountBtn.addEventListener('click', async () => {
   document.getElementById('addIssuerInput').value = '';
   document.getElementById('addAccountInput').value = '';
   document.getElementById('addSecretInput').value = '';
-  renderAccounts();
+  renderAccountListStructure();
+  updateTotpCodesInPlace();
+  showToast('新 2FA 账号添加成功！');
 });
 
 // QR File Scanner
@@ -349,8 +483,9 @@ qrFileInput.addEventListener('change', async (e) => {
     }
 
     await saveVault();
-    renderAccounts();
-    alert(`成功导入 ${parsedAccounts.length} 个 2FA 验证账号！`);
+    renderAccountListStructure();
+    updateTotpCodesInPlace();
+    showToast(`成功导入 ${parsedAccounts.length} 个账号！`);
   } catch (err) {
     alert('二维码识别失败: ' + err.message);
   } finally {
