@@ -16,6 +16,8 @@ let sessionState = {
   timerInterval: null
 };
 
+let accountToDeleteId = null;
+
 // DOM Elements
 const lockView = document.getElementById('lockView');
 const dashboardView = document.getElementById('dashboardView');
@@ -46,6 +48,12 @@ const currentPasswordInput = document.getElementById('currentPasswordInput');
 const newPasswordInput = document.getElementById('newPasswordInput');
 const confirmNewPasswordInput = document.getElementById('confirmNewPasswordInput');
 const settingsError = document.getElementById('settingsError');
+
+// Delete Modal Elements
+const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+const deleteConfirmText = document.getElementById('deleteConfirmText');
+const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
 
 initTheme();
 setupServiceWorker();
@@ -235,6 +243,12 @@ function renderAccountListStructure() {
           </svg>
           <span class="timer-ring-text">--</span>
         </div>
+        <button class="delete-account-btn" title="删除账号" aria-label="Delete Account">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
       </div>
     `;
 
@@ -242,6 +256,13 @@ function renderAccountListStructure() {
       e.stopPropagation();
       const codeText = card.querySelector('.totp-code-display').dataset.rawCode;
       if (codeText) copyToClipboard(codeText);
+    });
+
+    card.querySelector('.delete-account-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      accountToDeleteId = acc.id;
+      deleteConfirmText.textContent = `确定要删除【${acc.issuer} (${acc.account})】验证码账号吗？删除后云端将同步更新，且不可撤销。`;
+      deleteConfirmModal.classList.add('active');
     });
 
     card.addEventListener('click', () => {
@@ -265,6 +286,34 @@ function renderAccountListStructure() {
     `;
   }
 }
+
+// Delete Account Modal Actions
+cancelDeleteBtn.addEventListener('click', () => {
+  deleteConfirmModal.classList.remove('active');
+  accountToDeleteId = null;
+});
+
+confirmDeleteBtn.addEventListener('click', async () => {
+  if (!accountToDeleteId || !sessionState.vault) return;
+
+  confirmDeleteBtn.disabled = true;
+  confirmDeleteBtn.textContent = '删除并同步中...';
+
+  try {
+    sessionState.vault.accounts = sessionState.vault.accounts.filter(a => a.id !== accountToDeleteId);
+    await saveVault();
+    renderAccountListStructure();
+    updateTotpCodesInPlace();
+    showToast('2FA 验证账号已成功删除！');
+    deleteConfirmModal.classList.remove('active');
+  } catch (err) {
+    alert('删除账号失败: ' + err.message);
+  } finally {
+    confirmDeleteBtn.disabled = false;
+    confirmDeleteBtn.textContent = '确认删除';
+    accountToDeleteId = null;
+  }
+});
 
 // In-Place Update TOTP codes & timer rings every 1s safely
 async function updateTotpCodesInPlace() {
@@ -433,6 +482,8 @@ document.addEventListener('keydown', (e) => {
       addModal.classList.remove('active');
     } else if (settingsModal.classList.contains('active')) {
       settingsModal.classList.remove('active');
+    } else if (deleteConfirmModal.classList.contains('active')) {
+      deleteConfirmModal.classList.remove('active');
     } else if (sessionState.vault) {
       lockVault();
     }

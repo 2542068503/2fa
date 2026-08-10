@@ -415,9 +415,33 @@ body {
   background: var(--primary-light);
 }
 
+/* Delete Account Button */
+.delete-account-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  opacity: 0.6;
+}
+
+.account-card-pro:hover .delete-account-btn {
+  opacity: 1;
+}
+
+.delete-account-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--destructive);
+}
+
 /* Progress Ring Timer with Tabular Nums */
 .timer-ring-wrapper {
-  position: relative;
   width: 36px;
   height: 36px;
   display: flex;
