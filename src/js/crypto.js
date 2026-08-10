@@ -5,7 +5,7 @@ export function zeroBuffer(uint8Array) {
   }
 }
 
-// Convert Uint8Array to Base64 and back
+// Convert Uint8Array to Base64 and Hex
 export function bufferToBase64(buf) {
   let binary = '';
   const bytes = new Uint8Array(buf);
@@ -22,6 +22,11 @@ export function base64ToBuffer(b64) {
     bytes[i] = binary.charCodeAt(i);
   }
   return bytes;
+}
+
+export function bufferToHex(buf) {
+  const bytes = new Uint8Array(buf);
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 // Deterministic Salt Generator from Master Password (enables seamless multi-device zero-knowledge lookup)
@@ -60,7 +65,8 @@ export async function deriveKeysWithWorker(password, saltEnc, saltAuth) {
           ['encrypt', 'decrypt']
         );
 
-        const kAuthHash = bufferToBase64(kAuthBits);
+        // Use clean Hex string for kAuthHash (Header & KV Key safe)
+        const kAuthHash = bufferToHex(kAuthBits);
 
         // Zero out worker raw bit copies
         zeroBuffer(kEncBits);

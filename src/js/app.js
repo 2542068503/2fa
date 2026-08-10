@@ -89,17 +89,17 @@ async function handleUnlockOrCreate() {
     sessionState.saltEncB64 = bufferToBase64(saltEnc);
     sessionState.saltAuthB64 = bufferToBase64(saltAuth);
 
-    // Query Cloud KV with kAuthHash
+    // Query Cloud KV with clean Hex kAuthHash
     const { data: cloudData, timeOffsetMs } = await fetchCloudVault(kAuthHash);
     sessionState.timeOffsetMs = timeOffsetMs;
 
     let decrypted = null;
+
     if (cloudData && cloudData.ciphertext) {
       try {
         decrypted = await decryptVaultPayload(cloudData.iv, cloudData.ciphertext, kEnc);
         saveEncryptedVaultLocal(cloudData);
       } catch (err) {
-        // AES-GCM tag mismatch -> wrong password
         throw new Error('INVALID_MAGIC');
       }
     }
@@ -163,7 +163,25 @@ async function saveVault() {
   };
 
   saveEncryptedVaultLocal(payload);
-  await pushCloudVault(sessionState.kAuthHash, payload);
+  const syncRes = await pushCloudVault(sessionState.kAuthHash, payload);
+
+  if (syncRes && syncRes.conflict && syncRes.remotePayload) {
+    // Merge conflict resolution
+    try {
+      const remoteDecrypted = await decryptVaultPayload(syncRes.remotePayload.iv, syncRes.remotePayload.ciphertext, sessionState.kEnc);
+      const existingIds = new Set(sessionState.vault.accounts.map((a) => a.id));
+      for (const rAcc of remoteDecrypted.accounts) {
+        if (!existingIds.has(rAcc.id)) {
+          sessionState.vault.accounts.push(rAcc);
+        }
+      }
+      sessionState.vault.updatedAt = Date.now();
+      const mergedEncrypted = await encryptVaultPayload(sessionState.vault, sessionState.kEnc);
+      const mergedPayload = { ...payload, iv: mergedEncrypted.iv, ciphertext: mergedEncrypted.ciphertext, updatedAt: sessionState.vault.updatedAt };
+      saveEncryptedVaultLocal(mergedPayload);
+      await pushCloudVault(sessionState.kAuthHash, mergedPayload);
+    } catch (e) {}
+  }
 }
 
 function formatTotpCode(code) {
@@ -442,25 +460,35 @@ saveAccountBtn.addEventListener('click', async () => {
 
   if (!secret) return;
 
-  sessionState.vault.accounts.push({
-    id: window.crypto.randomUUID(),
-    issuer,
-    account,
-    secret,
-    algo,
-    digits: algo === 'STEAM' ? 5 : 6,
-    period: 30,
-    createdAt: Date.now()
-  });
+  saveAccountBtn.disabled = true;
+  saveAccountBtn.textContent = '加密同步中...';
 
-  await saveVault();
-  addModal.classList.remove('active');
-  document.getElementById('addIssuerInput').value = '';
-  document.getElementById('addAccountInput').value = '';
-  document.getElementById('addSecretInput').value = '';
-  renderAccountListStructure();
-  updateTotpCodesInPlace();
-  showToast('新 2FA 账号添加成功！');
+  try {
+    sessionState.vault.accounts.push({
+      id: window.crypto.randomUUID(),
+      issuer,
+      account,
+      secret,
+      algo,
+      digits: algo === 'STEAM' ? 5 : 6,
+      period: 30,
+      createdAt: Date.now()
+    });
+
+    await saveVault();
+    addModal.classList.remove('active');
+    document.getElementById('addIssuerInput').value = '';
+    document.getElementById('addAccountInput').value = '';
+    document.getElementById('addSecretInput').value = '';
+    renderAccountListStructure();
+    updateTotpCodesInPlace();
+    showToast('新 2FA 账号添加并同步成功！');
+  } catch (err) {
+    alert('保存账号失败: ' + err.message);
+  } finally {
+    saveAccountBtn.disabled = false;
+    saveAccountBtn.textContent = '保存账号';
+  }
 });
 
 // QR File Scanner
@@ -488,7 +516,7 @@ qrFileInput.addEventListener('change', async (e) => {
     await saveVault();
     renderAccountListStructure();
     updateTotpCodesInPlace();
-    showToast(`成功导入 ${parsedAccounts.length} 个账号！`);
+    showToast(`成功导入并同步 ${parsedAccounts.length} 个账号！`);
   } catch (err) {
     alert('二维码识别失败: ' + err.message);
   } finally {
