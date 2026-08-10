@@ -1,81 +1,166 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>2FA Authenticator</title>
+  <title>2FA Authenticator - 安全验证器</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="stylesheet" href="/src/css/style.css" />
 </head>
 <body>
-  <div id="app" class="container">
-    <!-- Header -->
-    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-      <h1 style="display: flex; align-items: center; gap: 0.5rem;">
-        🔐 2FA Authenticator
-      </h1>
-      <div style="display: flex; gap: 0.5rem;">
-        <button id="themeToggleBtn" class="btn btn-secondary">🌙</button>
-        <button id="lockBtn" class="btn btn-secondary" style="display: none;">🔒 Lock</button>
+  <div class="app-container">
+    <!-- Application Header -->
+    <header class="app-header">
+      <div class="brand-logo">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <span>2FA Vault</span>
+      </div>
+      <div class="header-actions">
+        <button id="themeToggleBtn" class="btn-icon-only" title="切换暗色/亮色主题" aria-label="Toggle Theme">
+          <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+        <button id="lockBtn" class="btn-ghost" style="display: none;" title="锁定加密库">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span>锁定</span>
+        </button>
       </div>
     </header>
 
     <!-- Lock View -->
-    <div id="lockView" class="glass-card" style="max-width: 400px; margin: 2rem auto;">
-      <h2 id="lockTitle" style="margin-bottom: 1rem;">Unlock Vault</h2>
-      <p id="lockDesc" style="color: var(--text-secondary); margin-bottom: 1.5rem;">
-        Enter your master password to decrypt your 2FA accounts.
-      </p>
-      <input type="password" id="masterPasswordInput" class="input-field" placeholder="Master Password" />
-      <button id="unlockBtn" class="btn" style="width: 100%; justify-content: center;">
-        Unlock Vault
+    <div id="lockView" class="glass-panel lock-wrapper">
+      <div class="lock-shield-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        </svg>
+      </div>
+      <h2 id="lockTitle" class="lock-title">解锁密码库</h2>
+      <p id="lockDesc" class="lock-subtitle">输入您的主密码（Master Password）以解密 2FA 动态验证码。</p>
+      
+      <div class="input-wrapper">
+        <input type="password" id="masterPasswordInput" class="input-control" placeholder="输入主密码" autocomplete="current-password" autofocus />
+        <button id="togglePwVisibility" class="input-icon-end" type="button" aria-label="Toggle password visibility">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </div>
+
+      <button id="unlockBtn" class="btn-primary" style="width: 100%;">
+        <span>解锁验证器</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
       </button>
-      <div id="lockError" style="color: #ef4444; margin-top: 1rem; display: none;"></div>
+      <div id="lockError" style="color: var(--destructive); margin-top: 1rem; font-size: 0.9rem; font-weight: 500; display: none;"></div>
     </div>
 
     <!-- Main Dashboard View -->
     <div id="dashboardView" style="display: none;">
-      <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
-        <input type="text" id="searchInput" class="input-field" placeholder="Search accounts... (/)" style="margin-bottom: 0;" />
-        <button id="addAccountBtn" class="btn">+ Add</button>
-        <label for="qrFileInput" class="btn btn-secondary" style="cursor: pointer; display: inline-flex; align-items: center;">
-          📷 Scan QR
+      <div class="toolbar">
+        <div class="search-box">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="searchInput" class="input-control" placeholder="搜索账号或服务..." />
+          <span class="search-kbd">/</span>
+        </div>
+        <button id="addAccountBtn" class="btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>添加账号</span>
+        </button>
+        <label for="qrFileInput" class="btn-ghost" style="cursor: pointer;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>扫码识别</span>
         </label>
         <input type="file" id="qrFileInput" accept="image/*" style="display: none;" />
       </div>
 
-      <div id="accountList"></div>
+      <div id="accountList" class="accounts-grid"></div>
     </div>
   </div>
 
   <!-- Add Account Modal -->
-  <div id="addModal" class="modal-overlay">
-    <div class="glass-card" style="width: 100%; max-width: 500px;">
-      <h3 style="margin-bottom: 1rem;">Add 2FA Account</h3>
-      <input type="text" id="addIssuerInput" class="input-field" placeholder="Issuer (e.g. GitHub, Steam)" />
-      <input type="text" id="addAccountInput" class="input-field" placeholder="Account (e.g. user@example.com)" />
-      <input type="text" id="addSecretInput" class="input-field" placeholder="Secret Key (Base32)" />
-      
-      <div style="margin-bottom: 1rem;">
-        <label style="font-size: 0.875rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Algorithm:</label>
-        <select id="addAlgoSelect" class="input-field" style="margin-bottom: 0.5rem;">
-          <option value="SHA1">SHA1 (Standard)</option>
+  <div id="addModal" class="modal-backdrop">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">添加 2FA 验证账号</h3>
+        <button id="closeAddModalBtn" class="btn-icon-only" style="border: none; background: transparent;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="input-wrapper">
+        <label style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">服务平台 (Issuer)</label>
+        <input type="text" id="addIssuerInput" class="input-control" placeholder="如 GitHub, Google, Steam" />
+      </div>
+
+      <div class="input-wrapper">
+        <label style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">账号标识 (Account)</label>
+        <input type="text" id="addAccountInput" class="input-control" placeholder="如 user@example.com" />
+      </div>
+
+      <div class="input-wrapper">
+        <label style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">密钥 (Base32 Secret)</label>
+        <input type="text" id="addSecretInput" class="input-control" placeholder="输入 Base32 密钥" style="font-family: var(--font-mono);" />
+      </div>
+
+      <div class="input-wrapper">
+        <label style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">验证算法 (Algorithm)</label>
+        <select id="addAlgoSelect" class="input-control">
+          <option value="SHA1">SHA1 (标准 6位数字)</option>
           <option value="SHA256">SHA256</option>
           <option value="SHA512">SHA512</option>
-          <option value="STEAM">STEAM (Steam Guard 5-char)</option>
+          <option value="STEAM">STEAM (Steam Guard 5位字符)</option>
         </select>
       </div>
 
-      <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-        <button id="closeAddModalBtn" class="btn btn-secondary">Cancel</button>
-        <button id="saveAccountBtn" class="btn">Save Account</button>
+      <div class="modal-actions">
+        <button id="cancelAddBtn" class="btn-ghost">取消</button>
+        <button id="saveAccountBtn" class="btn-primary">保存账号</button>
       </div>
     </div>
   </div>
 
-  <!-- Toast -->
-  <div id="toast" class="toast">Code Copied!</div>
+  <!-- Toast Banner -->
+  <div id="toast" class="toast-banner">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+    <span>验证码已复制到剪贴板！</span>
+  </div>
 
   <script type="module" src="/src/js/app.js"></script>
 </body>

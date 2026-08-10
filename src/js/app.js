@@ -1,5 +1,5 @@
 import { initTheme, toggleTheme } from './theme.js';
-import { deriveKeysWithWorker, encryptVaultPayload, decryptVaultPayload, zeroBuffer, bufferToBase64, base64ToBuffer } from './crypto.js';
+import { deriveKeysWithWorker, encryptVaultPayload, decryptVaultPayload, base64ToBuffer, bufferToBase64 } from './crypto.js';
 import { generateTOTP, getSecondsRemaining } from './totp.js';
 import { getStoredEncryptedVault, saveEncryptedVaultLocal, fetchCloudVault, pushCloudVault } from './storage.js';
 import { scanQrCodeFromImageFile, parseOtpauthUri } from './qr-parser.js';
@@ -17,6 +17,7 @@ let sessionState = {
 const lockView = document.getElementById('lockView');
 const dashboardView = document.getElementById('dashboardView');
 const masterPasswordInput = document.getElementById('masterPasswordInput');
+const togglePwVisibility = document.getElementById('togglePwVisibility');
 const unlockBtn = document.getElementById('unlockBtn');
 const lockError = document.getElementById('lockError');
 const lockBtn = document.getElementById('lockBtn');
@@ -26,6 +27,7 @@ const searchInput = document.getElementById('searchInput');
 const addAccountBtn = document.getElementById('addAccountBtn');
 const addModal = document.getElementById('addModal');
 const closeAddModalBtn = document.getElementById('closeAddModalBtn');
+const cancelAddBtn = document.getElementById('cancelAddBtn');
 const saveAccountBtn = document.getElementById('saveAccountBtn');
 const qrFileInput = document.getElementById('qrFileInput');
 const toast = document.getElementById('toast');
@@ -34,8 +36,9 @@ initTheme();
 checkExistingVaultStatus();
 setupServiceWorker();
 
+// Theme Switcher
 themeToggleBtn.addEventListener('click', () => {
-  themeToggleBtn.textContent = toggleTheme() === 'dark' ? '☀️' : '🌙';
+  toggleTheme();
 });
 
 function setupServiceWorker() {
@@ -44,12 +47,18 @@ function setupServiceWorker() {
   }
 }
 
+// Password Visibility Toggle
+togglePwVisibility.addEventListener('click', () => {
+  const isPw = masterPasswordInput.type === 'password';
+  masterPasswordInput.type = isPw ? 'text' : 'password';
+});
+
 function checkExistingVaultStatus() {
   const localVault = getStoredEncryptedVault();
   if (!localVault) {
-    document.getElementById('lockTitle').textContent = 'Create New Vault';
-    document.getElementById('lockDesc').textContent = 'Set a master password to encrypt your 2FA accounts.';
-    unlockBtn.textContent = 'Create Vault';
+    document.getElementById('lockTitle').textContent = '创建主密码库';
+    document.getElementById('lockDesc').textContent = '第一次使用？请设置主密码（Master Password）来加密保护您的验证码。';
+    unlockBtn.querySelector('span').textContent = '创建密码库';
   }
 }
 
@@ -62,7 +71,7 @@ async function handleUnlockOrCreate() {
   const password = masterPasswordInput.value;
   if (!password) return;
 
-  unlockBtn.textContent = 'Decrypting...';
+  unlockBtn.querySelector('span').textContent = '解密计算中...';
   unlockBtn.disabled = true;
   lockError.style.display = 'none';
 
@@ -105,10 +114,10 @@ async function handleUnlockOrCreate() {
 
     showDashboard();
   } catch (err) {
-    lockError.textContent = err.message === 'INVALID_MAGIC' ? 'Incorrect Password!' : 'Decryption Failed!';
+    lockError.textContent = err.message === 'INVALID_MAGIC' ? '密码不正确！请重新输入' : '密码库解密失败！';
     lockError.style.display = 'block';
   } finally {
-    unlockBtn.textContent = 'Unlock Vault';
+    unlockBtn.querySelector('span').textContent = '解锁验证器';
     unlockBtn.disabled = false;
   }
 }
@@ -140,52 +149,99 @@ async function saveVault(saltEncB64, saltAuthB64) {
   await pushCloudVault(sessionState.kAuthHash, payload);
 }
 
+function formatTotpCode(code) {
+  if (code.length === 6) {
+    return `${code.slice(0, 3)} ${code.slice(3)}`;
+  }
+  if (code.length === 8) {
+    return `${code.slice(0, 4)} ${code.slice(4)}`;
+  }
+  return code;
+}
+
 async function renderAccounts() {
   if (!sessionState.vault) return;
   accountList.innerHTML = '';
-  const filter = searchInput.value.toLowerCase();
+  const filter = searchInput.value.toLowerCase().trim();
 
-  if (sessionState.vault.accounts.length === 0) {
-    accountList.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 2rem;">No 2FA accounts added yet. Click "+ Add" or "📷 Scan QR" to start.</div>';
-    return;
-  }
+  const sortedAccounts = [...sessionState.vault.accounts].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 
-  for (const acc of sessionState.vault.accounts) {
+  let count = 0;
+  for (const acc of sortedAccounts) {
     if (filter && !acc.issuer.toLowerCase().includes(filter) && !acc.account.toLowerCase().includes(filter)) {
       continue;
     }
+    count++;
 
-    const code = await generateTOTP(acc.secret, {
+    const codeRaw = await generateTOTP(acc.secret, {
       algo: acc.algo || 'SHA1',
       digits: acc.digits || 6,
       period: acc.period || 30,
       timeOffsetMs: sessionState.timeOffsetMs
     });
 
-    const rem = getSecondsRemaining(acc.period || 30, sessionState.timeOffsetMs);
+    const formattedCode = formatTotpCode(codeRaw);
+    const period = acc.period || 30;
+    const rem = getSecondsRemaining(period, sessionState.timeOffsetMs);
+
+    // Calculate stroke dashoffset for 36px ring (radius 14, circumference ~88)
+    const strokeOffset = 88 * (1 - rem / period);
+    const isWarning = rem <= 5;
+
+    const initial = (acc.issuer || 'U').substring(0, 1).toUpperCase();
 
     const card = document.createElement('div');
-    card.className = 'account-card';
+    card.className = `account-card-pro ${acc.pinned ? 'pinned' : ''}`;
     card.innerHTML = `
-      <div>
-        <div style="font-weight: 600; font-size: 1.1rem;">${acc.issuer}</div>
-        <div style="color: var(--text-secondary); font-size: 0.875rem;">${acc.account}</div>
+      <div class="account-info">
+        <div class="service-avatar">${initial}</div>
+        <div class="account-details">
+          <div class="issuer-name">
+            ${acc.issuer}
+            ${acc.pinned ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' : ''}
+          </div>
+          <div class="account-handle">${acc.account}</div>
+        </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 1rem;">
-        <div class="code-display">${code}</div>
-        <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); min-width: 28px; text-align: right;">${rem}s</div>
+      <div class="totp-section">
+        <div class="totp-code-display" title="点击复制">${formattedCode}</div>
+        <div class="timer-ring-wrapper">
+          <svg class="timer-ring-svg" viewBox="0 0 36 36">
+            <circle class="timer-ring-bg" cx="18" cy="18" r="14"></circle>
+            <circle class="timer-ring-circle ${isWarning ? 'warning' : ''}" cx="18" cy="18" r="14" style="stroke-dashoffset: ${strokeOffset}"></circle>
+          </svg>
+          <span class="timer-ring-text">${rem}</span>
+        </div>
       </div>
     `;
 
-    card.addEventListener('click', () => copyToClipboard(code));
+    card.querySelector('.totp-code-display').addEventListener('click', (e) => {
+      e.stopPropagation();
+      copyToClipboard(codeRaw);
+    });
+
+    card.addEventListener('click', () => copyToClipboard(codeRaw));
     accountList.appendChild(card);
+  }
+
+  if (count === 0) {
+    accountList.innerHTML = `
+      <div class="empty-state">
+        <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--text-primary);">未找到 2FA 验证账号</h3>
+        <p style="font-size: 0.9rem;">点击上方“+ 添加账号”或“📷 扫码识别”来开始导入您的动态验证码。</p>
+      </div>
+    `;
   }
 }
 
 function copyToClipboard(text) {
   navigator.clipboard.writeText(text);
   toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2000);
+  setTimeout(() => toast.classList.remove('show'), 2200);
 
   if (sessionState.clipboardTimer) clearTimeout(sessionState.clipboardTimer);
   sessionState.clipboardTimer = setTimeout(() => {
@@ -241,6 +297,7 @@ searchInput.addEventListener('input', renderAccounts);
 // Add modal
 addAccountBtn.addEventListener('click', () => addModal.classList.add('active'));
 closeAddModalBtn.addEventListener('click', () => addModal.classList.remove('active'));
+cancelAddBtn.addEventListener('click', () => addModal.classList.remove('active'));
 
 saveAccountBtn.addEventListener('click', async () => {
   const issuer = document.getElementById('addIssuerInput').value || 'Unknown';
@@ -293,9 +350,9 @@ qrFileInput.addEventListener('change', async (e) => {
 
     await saveVault();
     renderAccounts();
-    alert(`Successfully imported ${parsedAccounts.length} 2FA account(s)!`);
+    alert(`成功导入 ${parsedAccounts.length} 个 2FA 验证账号！`);
   } catch (err) {
-    alert('QR Code Scan Failed: ' + err.message);
+    alert('二维码识别失败: ' + err.message);
   } finally {
     qrFileInput.value = '';
   }
