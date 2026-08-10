@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2FA Authenticator</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="stylesheet" href="/src/css/style.css" />
+</head>
+<body>
+  <div id="app" class="container">
+    <!-- Header -->
+    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+      <h1 style="display: flex; align-items: center; gap: 0.5rem;">
+        🔐 2FA Authenticator
+      </h1>
+      <div style="display: flex; gap: 0.5rem;">
+        <button id="themeToggleBtn" class="btn btn-secondary">🌙</button>
+        <button id="lockBtn" class="btn btn-secondary" style="display: none;">🔒 Lock</button>
+      </div>
+    </header>
+
+    <!-- Lock View -->
+    <div id="lockView" class="glass-card" style="max-width: 400px; margin: 2rem auto;">
+      <h2 id="lockTitle" style="margin-bottom: 1rem;">Unlock Vault</h2>
+      <p id="lockDesc" style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+        Enter your master password to decrypt your 2FA accounts.
+      </p>
+      <input type="password" id="masterPasswordInput" class="input-field" placeholder="Master Password" />
+      <button id="unlockBtn" class="btn" style="width: 100%; justify-content: center;">
+        Unlock Vault
+      </button>
+      <div id="lockError" style="color: #ef4444; margin-top: 1rem; display: none;"></div>
+    </div>
+
+    <!-- Main Dashboard View -->
+    <div id="dashboardView" style="display: none;">
+      <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+        <input type="text" id="searchInput" class="input-field" placeholder="Search accounts... (/)" style="margin-bottom: 0;" />
+        <button id="addAccountBtn" class="btn">+ Add</button>
+        <label for="qrFileInput" class="btn btn-secondary" style="cursor: pointer; display: inline-flex; align-items: center;">
+          📷 Scan QR
+        </label>
+        <input type="file" id="qrFileInput" accept="image/*" style="display: none;" />
+      </div>
+
+      <div id="accountList"></div>
+    </div>
+  </div>
+
+  <!-- Add Account Modal -->
+  <div id="addModal" class="modal-overlay">
+    <div class="glass-card" style="width: 100%; max-width: 500px;">
+      <h3 style="margin-bottom: 1rem;">Add 2FA Account</h3>
+      <input type="text" id="addIssuerInput" class="input-field" placeholder="Issuer (e.g. GitHub, Steam)" />
+      <input type="text" id="addAccountInput" class="input-field" placeholder="Account (e.g. user@example.com)" />
+      <input type="text" id="addSecretInput" class="input-field" placeholder="Secret Key (Base32)" />
+      
+      <div style="margin-bottom: 1rem;">
+        <label style="font-size: 0.875rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Algorithm:</label>
+        <select id="addAlgoSelect" class="input-field" style="margin-bottom: 0.5rem;">
+          <option value="SHA1">SHA1 (Standard)</option>
+          <option value="SHA256">SHA256</option>
+          <option value="SHA512">SHA512</option>
+          <option value="STEAM">STEAM (Steam Guard 5-char)</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+        <button id="closeAddModalBtn" class="btn btn-secondary">Cancel</button>
+        <button id="saveAccountBtn" class="btn">Save Account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">Code Copied!</div>
+
+  <script type="module" src="/src/js/app.js"></script>
+</body>
+</html>
