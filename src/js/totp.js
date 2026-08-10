@@ -1,5 +1,6 @@
 // Base32 Decoder
 export function parseBase32(base32) {
+  if (!base32) return new Uint8Array(8);
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
   let cleaned = base32.replace(/[\s=-]/g, '').toUpperCase();
   let bits = '';
@@ -10,11 +11,13 @@ export function parseBase32(base32) {
     bits += val.toString(2).padStart(5, '0');
   }
 
+  if (bits.length === 0) return new Uint8Array(8);
+
   const bytes = new Uint8Array(Math.floor(bits.length / 8));
   for (let i = 0; i < bytes.length; i++) {
     bytes[i] = parseInt(bits.substr(i * 8, 8), 2);
   }
-  return bytes;
+  return bytes.length > 0 ? bytes : new Uint8Array(8);
 }
 
 // Steam 5-character Base Alphabet Mapping

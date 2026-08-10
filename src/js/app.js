@@ -266,7 +266,7 @@ function renderAccountListStructure() {
   }
 }
 
-// In-Place Update TOTP codes & timer rings every 1s without rebuilding DOM
+// In-Place Update TOTP codes & timer rings every 1s safely
 async function updateTotpCodesInPlace() {
   if (!sessionState.vault) return;
 
@@ -276,32 +276,40 @@ async function updateTotpCodesInPlace() {
     const acc = sessionState.vault.accounts.find((a) => a.id === accId);
     if (!acc) continue;
 
-    const codeRaw = await generateTOTP(acc.secret, {
-      algo: acc.algo || 'SHA1',
-      digits: acc.digits || 6,
-      period: acc.period || 30,
-      timeOffsetMs: sessionState.timeOffsetMs
-    });
+    try {
+      const codeRaw = await generateTOTP(acc.secret, {
+        algo: acc.algo || 'SHA1',
+        digits: acc.digits || 6,
+        period: acc.period || 30,
+        timeOffsetMs: sessionState.timeOffsetMs
+      });
 
-    const formattedCode = formatTotpCode(codeRaw);
-    const period = acc.period || 30;
-    const rem = getSecondsRemaining(period, sessionState.timeOffsetMs);
+      const formattedCode = formatTotpCode(codeRaw);
+      const period = acc.period || 30;
+      const rem = getSecondsRemaining(period, sessionState.timeOffsetMs);
 
-    const codeDisplay = card.querySelector('.totp-code-display');
-    const ringCircle = card.querySelector('.timer-ring-circle');
-    const ringText = card.querySelector('.timer-ring-text');
+      const codeDisplay = card.querySelector('.totp-code-display');
+      const ringCircle = card.querySelector('.timer-ring-circle');
+      const ringText = card.querySelector('.timer-ring-text');
 
-    codeDisplay.textContent = formattedCode;
-    codeDisplay.dataset.rawCode = codeRaw;
-    ringText.textContent = rem;
+      if (codeDisplay) {
+        codeDisplay.textContent = formattedCode;
+        codeDisplay.dataset.rawCode = codeRaw;
+      }
+      if (ringText) ringText.textContent = rem;
 
-    const strokeOffset = 88 * (1 - rem / period);
-    ringCircle.style.strokeDashoffset = strokeOffset;
-
-    if (rem <= 5) {
-      ringCircle.classList.add('warning');
-    } else {
-      ringCircle.classList.remove('warning');
+      if (ringCircle) {
+        const strokeOffset = 88 * (1 - rem / period);
+        ringCircle.style.strokeDashoffset = strokeOffset;
+        if (rem <= 5) {
+          ringCircle.classList.add('warning');
+        } else {
+          ringCircle.classList.remove('warning');
+        }
+      }
+    } catch (err) {
+      const codeDisplay = card.querySelector('.totp-code-display');
+      if (codeDisplay) codeDisplay.textContent = 'Err Key';
     }
   }
 }
