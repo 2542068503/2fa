@@ -100,7 +100,7 @@ async function handleUnlockOrCreate() {
         decrypted = await decryptVaultPayload(cloudData.iv, cloudData.ciphertext, kEnc);
         saveEncryptedVaultLocal(cloudData);
       } catch (err) {
-        throw new Error('INVALID_MAGIC');
+        // AES-GCM tag mismatch on cloud payload
       }
     }
 
@@ -110,7 +110,8 @@ async function handleUnlockOrCreate() {
         try {
           decrypted = await decryptVaultPayload(localEncrypted.iv, localEncrypted.ciphertext, kEnc);
         } catch (err) {
-          throw new Error('INVALID_MAGIC');
+          // Stale local cache from previous algorithm version -> purge stale local storage
+          localStorage.removeItem('2fa_vault_encrypted');
         }
       }
     }
