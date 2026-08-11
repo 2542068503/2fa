@@ -1,7 +1,7 @@
 import { initTheme, toggleTheme } from './theme.js';
 import { deriveDeterministicSalts, deriveKeysWithWorker, encryptVaultPayload, decryptVaultPayload, base64ToBuffer, bufferToBase64 } from './crypto.js';
 import { generateTOTP, getSecondsRemaining } from './totp.js';
-import { getStoredEncryptedVault, saveEncryptedVaultLocal, fetchCloudVault, pushCloudVault, deleteCloudVault } from './storage.js';
+import { getStoredEncryptedVault, saveEncryptedVaultLocal, fetchCloudVault, pushCloudVault } from './storage.js';
 import { scanQrCodeFromImageFile, parseOtpauthUri } from './qr-parser.js';
 
 let sessionState = {
@@ -102,6 +102,12 @@ async function handleUnlockOrCreate() {
     const { data: cloudData, timeOffsetMs } = await fetchCloudVault(kAuthHash);
     sessionState.timeOffsetMs = timeOffsetMs;
 
+    if (cloudData && cloudData.tombstone) {
+      // The password was explicitly changed/revoked on another device
+      localStorage.removeItem('encryptedVault');
+      throw new Error('REVOKED');
+    }
+
     let decrypted = null;
     let hasExistingData = false;
 
@@ -147,6 +153,8 @@ async function handleUnlockOrCreate() {
     console.error(err);
     if (err.message && err.message.includes('reading \'digest\'')) {
       lockError.textContent = '安全环境受限：必须使用 https:// 或 localhost 访问才能使用加密功能！';
+    } else if (err.message === 'REVOKED') {
+      lockError.textContent = '该密码已被修改并作废！请使用最新密码登入。';
     } else {
       lockError.textContent = err.message === 'INVALID_MAGIC' 
         ? '密码不正确！请重新输入' 
@@ -491,9 +499,10 @@ async function handleMasterPasswordChange() {
 
     await saveVault();
 
-    // Destroy the old cloud vault since the user has migrated to a new identity hash
+    // Push a tombstone to the old cloud vault since the user has migrated to a new identity hash.
+    // This immediately invalidates the old password across all devices.
     if (oldAuthHash) {
-      await deleteCloudVault(oldAuthHash);
+      await pushCloudVault({ tombstone: true }, oldAuthHash);
     }
 
     settingsModal.classList.remove('active');
