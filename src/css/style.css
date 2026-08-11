@@ -1,67 +1,67 @@
-:root {
-  /* Light Theme Palette (Security Cyan & Slate) */
-  --bg-main: #f0f4f8;
-  --bg-card: rgba(255, 255, 255, 0.85);
-  --bg-card-hover: rgba(255, 255, 255, 0.95);
-  --bg-input: #ffffff;
-  --bg-modal: rgba(255, 255, 255, 0.95);
-  
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  
-  --primary: #0284c7;
-  --primary-hover: #0369a1;
-  --primary-light: rgba(2, 132, 199, 0.1);
-  --accent: #10b981;
-  --accent-hover: #059669;
-  --destructive: #ef4444;
-  --destructive-hover: #dc2626;
-  
-  --border-color: rgba(226, 232, 240, 0.8);
-  --border-focus: #0284c7;
-  
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 20px 35px -10px rgba(15, 23, 42, 0.12);
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
+:root {
+  /* Light Theme Palette (Exaggerated Minimalism) */
+  --bg-main: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F1F5F9;
+  --bg-input: #FFFFFF;
+  --bg-modal: #FFFFFF;
+  
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  
+  --primary: #1E3A5F;
+  --primary-hover: #0F1D2F;
+  --primary-light: rgba(30, 58, 95, 0.08);
+  --accent: #059669;
+  --accent-hover: #047857;
+  --destructive: #DC2626;
+  --destructive-hover: #B91C1C;
+  
+  --border-color: #E2E8F0;
+  --border-focus: #1E3A5F;
+  
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -1px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.05), 0 4px 6px -2px rgba(15, 23, 42, 0.02);
+
+  --radius: 6px;
   --radius-full: 9999px;
   
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
   
-  --transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  --transition: all 0.2s ease;
 }
 
 [data-theme="dark"] {
-  /* Dark Theme Palette (Deep Cyber Slate & Emerald Accent) */
-  --bg-main: #090d16;
-  --bg-card: rgba(15, 23, 42, 0.75);
-  --bg-card-hover: rgba(30, 41, 59, 0.85);
-  --bg-input: #0f172a;
-  --bg-modal: rgba(15, 23, 42, 0.92);
+  /* Dark Theme Palette */
+  --bg-main: #090B0F;
+  --bg-card: #0F172A;
+  --bg-card-hover: #1E293B;
+  --bg-input: #0F172A;
+  --bg-modal: #0F172A;
   
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
   
-  --primary: #38bdf8;
-  --primary-hover: #7dd3fc;
+  --primary: #38BDF8;
+  --primary-hover: #7DD3FC;
   --primary-light: rgba(56, 189, 248, 0.15);
-  --accent: #34d399;
-  --accent-hover: #6ee7b7;
-  --destructive: #f87171;
-  --destructive-hover: #ef4444;
+  --accent: #34D399;
+  --accent-hover: #6EE7B7;
+  --destructive: #F87171;
+  --destructive-hover: #EF4444;
   
-  --border-color: rgba(51, 65, 85, 0.7);
-  --border-focus: #38bdf8;
+  --border-color: #1E293B;
+  --border-focus: #38BDF8;
   
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 25px 40px -12px rgba(0, 0, 0, 0.7);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -109,10 +109,10 @@ body {
 }
 
 .brand-icon {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   background: linear-gradient(135deg, var(--primary), var(--accent));
-  border-radius: var(--radius-md);
+  border-radius: var(--radius);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -125,13 +125,11 @@ body {
   gap: 0.5rem;
 }
 
-/* Glass Card */
+/* Solid Card Panel (Removed Glassmorphism) */
 .glass-panel {
   background: var(--bg-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
   padding: 2.5rem 2rem;
   transition: var(--transition);
@@ -177,8 +175,9 @@ body {
 
 .input-control {
   width: 100%;
-  padding: 0.875rem 1.25rem;
-  border-radius: var(--radius-md);
+  height: 44px;
+  padding: 0 1.25rem;
+  border-radius: var(--radius);
   border: 1px solid var(--border-color);
   background: var(--bg-input);
   color: var(--text-primary);
@@ -211,8 +210,9 @@ body {
   background: linear-gradient(135deg, var(--primary), var(--primary-hover));
   color: white;
   border: none;
-  border-radius: var(--radius-md);
-  padding: 0.875rem 1.5rem;
+  border-radius: var(--radius);
+  height: 44px;
+  padding: 0 1.5rem;
   font-weight: 600;
   font-size: 0.95rem;
   cursor: pointer;
@@ -229,9 +229,9 @@ body {
 }
 
 .btn-icon-only {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--radius-md);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
   border: 1px solid var(--border-color);
   background: var(--bg-card);
   color: var(--text-secondary);
@@ -252,8 +252,9 @@ body {
   background: transparent;
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius);
+  height: 44px;
+  padding: 0 1.25rem;
   font-weight: 500;
   font-size: 0.9rem;
   cursor: pointer;
@@ -319,7 +320,7 @@ body {
 .account-card-pro {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius);
   padding: 1.25rem 1.5rem;
   display: flex;
   align-items: center;
@@ -351,7 +352,7 @@ body {
 .service-avatar {
   width: 44px;
   height: 44px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius);
   background: var(--primary-light);
   color: var(--primary);
   display: flex;
@@ -405,7 +406,7 @@ body {
   user-select: all;
   cursor: pointer;
   padding: 0.25rem 0.5rem;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   transition: background-color 0.2s ease;
   min-width: 140px;
   text-align: center;
@@ -419,7 +420,7 @@ body {
 .delete-account-btn, .edit-account-btn {
   width: 36px;
   height: 36px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -529,7 +530,7 @@ body {
 .modal-content {
   background: var(--bg-modal);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
   max-width: 480px;
   width: 100%;
