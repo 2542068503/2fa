@@ -145,9 +145,13 @@ async function handleUnlockOrCreate() {
     showDashboard();
   } catch (err) {
     console.error(err);
-    lockError.textContent = err.message === 'INVALID_MAGIC' 
-      ? '密码不正确！请重新输入' 
-      : '密码库解密失败！(' + (err.message || '未知错误') + ')';
+    if (err.message && err.message.includes('reading \'digest\'')) {
+      lockError.textContent = '安全环境受限：必须使用 https:// 或 localhost 访问才能使用加密功能！';
+    } else {
+      lockError.textContent = err.message === 'INVALID_MAGIC' 
+        ? '密码不正确！请重新输入' 
+        : '密码库解密失败！(' + (err.message || '未知错误') + ')';
+    }
     lockError.style.display = 'block';
   } finally {
     unlockBtn.querySelector('span').textContent = '解锁验证器';
