@@ -101,6 +101,8 @@ async function handleUnlockOrCreate() {
     // Query Cloud KV with clean Hex kAuthHash
     const { data: cloudData, timeOffsetMs } = await fetchCloudVault(kAuthHash);
     sessionState.timeOffsetMs = timeOffsetMs;
+    
+    console.log('Fetched cloudData for login:', cloudData);
 
     if (cloudData && cloudData.tombstone) {
       // The password was explicitly changed/revoked on another device
