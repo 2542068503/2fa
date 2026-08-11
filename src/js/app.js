@@ -144,7 +144,10 @@ async function handleUnlockOrCreate() {
 
     showDashboard();
   } catch (err) {
-    lockError.textContent = err.message === 'INVALID_MAGIC' ? '密码不正确！请重新输入' : '密码库解密失败！';
+    console.error(err);
+    lockError.textContent = err.message === 'INVALID_MAGIC' 
+      ? '密码不正确！请重新输入' 
+      : '密码库解密失败！(' + (err.message || '未知错误') + ')';
     lockError.style.display = 'block';
   } finally {
     unlockBtn.querySelector('span').textContent = '解锁验证器';
