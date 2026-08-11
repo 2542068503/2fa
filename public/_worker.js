@@ -30,7 +30,9 @@ export default {
           headers: {
             'Content-Type': 'application/json',
             'Date': new Date().toUTCString(),
-            'Access-Control-Allow-Origin': '*'
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'no-store',
+            'Vary': 'Authorization'
           }
         });
       }

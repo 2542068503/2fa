@@ -22,7 +22,8 @@ export async function fetchCloudVault(kAuthHash) {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${kAuthHash}`
-      }
+      },
+      cache: 'no-store'
     });
 
     const dateHeader = res.headers.get('Date');
