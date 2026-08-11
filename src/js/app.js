@@ -17,6 +17,7 @@ let sessionState = {
 };
 
 let accountToDeleteId = null;
+let accountToEditId = null;
 
 // DOM Elements
 const lockView = document.getElementById('lockView');
@@ -102,29 +103,31 @@ async function handleUnlockOrCreate() {
     sessionState.timeOffsetMs = timeOffsetMs;
 
     let decrypted = null;
+    let hasExistingData = false;
 
     if (cloudData && cloudData.ciphertext) {
+      hasExistingData = true;
       try {
         decrypted = await decryptVaultPayload(cloudData.iv, cloudData.ciphertext, kEnc);
         saveEncryptedVaultLocal(cloudData);
       } catch (err) {
-        // AES-GCM tag mismatch on cloud payload
+        throw new Error('INVALID_MAGIC');
       }
     }
 
     if (!decrypted) {
       const localEncrypted = getStoredEncryptedVault();
       if (localEncrypted && localEncrypted.ciphertext) {
+        hasExistingData = true;
         try {
           decrypted = await decryptVaultPayload(localEncrypted.iv, localEncrypted.ciphertext, kEnc);
         } catch (err) {
-          // Stale local cache from previous algorithm version -> purge stale local storage
-          localStorage.removeItem('2fa_vault_encrypted');
+          throw new Error('INVALID_MAGIC');
         }
       }
     }
 
-    if (!decrypted) {
+    if (!decrypted && !hasExistingData) {
       // First time vault creation for this master password
       sessionState.vault = {
         magic: 'VALID_VAULT_V1',
@@ -133,8 +136,10 @@ async function handleUnlockOrCreate() {
         accounts: []
       };
       await saveVault();
-    } else {
+    } else if (decrypted) {
       sessionState.vault = decrypted;
+    } else {
+      throw new Error('INVALID_MAGIC');
     }
 
     showDashboard();
@@ -243,6 +248,12 @@ function renderAccountListStructure() {
           </svg>
           <span class="timer-ring-text">--</span>
         </div>
+        <button class="edit-account-btn" title="编辑账号" aria-label="Edit Account">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+        </button>
         <button class="delete-account-btn" title="删除账号" aria-label="Delete Account">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
@@ -256,6 +267,17 @@ function renderAccountListStructure() {
       e.stopPropagation();
       const codeText = card.querySelector('.totp-code-display').dataset.rawCode;
       if (codeText) copyToClipboard(codeText);
+    });
+
+    card.querySelector('.edit-account-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      accountToEditId = acc.id;
+      document.querySelector('#addModal .modal-title').textContent = '编辑 2FA 验证账号';
+      document.getElementById('addIssuerInput').value = acc.issuer;
+      document.getElementById('addAccountInput').value = acc.account;
+      document.getElementById('addSecretInput').value = acc.secret;
+      document.getElementById('addAlgoSelect').value = acc.algo || 'SHA1';
+      addModal.classList.add('active');
     });
 
     card.querySelector('.delete-account-btn').addEventListener('click', (e) => {
@@ -507,8 +529,16 @@ searchInput.addEventListener('input', () => {
   updateTotpCodesInPlace();
 });
 
-// Add modal
-addAccountBtn.addEventListener('click', () => addModal.classList.add('active'));
+// Add/Edit modal
+addAccountBtn.addEventListener('click', () => {
+  accountToEditId = null;
+  document.querySelector('#addModal .modal-title').textContent = '添加 2FA 验证账号';
+  document.getElementById('addIssuerInput').value = '';
+  document.getElementById('addAccountInput').value = '';
+  document.getElementById('addSecretInput').value = '';
+  document.getElementById('addAlgoSelect').value = 'SHA1';
+  addModal.classList.add('active');
+});
 closeAddModalBtn.addEventListener('click', () => addModal.classList.remove('active'));
 cancelAddBtn.addEventListener('click', () => addModal.classList.remove('active'));
 
@@ -524,16 +554,27 @@ saveAccountBtn.addEventListener('click', async () => {
   saveAccountBtn.textContent = '加密同步中...';
 
   try {
-    sessionState.vault.accounts.push({
-      id: window.crypto.randomUUID(),
-      issuer,
-      account,
-      secret,
-      algo,
-      digits: algo === 'STEAM' ? 5 : 6,
-      period: 30,
-      createdAt: Date.now()
-    });
+    if (accountToEditId) {
+      const idx = sessionState.vault.accounts.findIndex(a => a.id === accountToEditId);
+      if (idx !== -1) {
+        sessionState.vault.accounts[idx].issuer = issuer;
+        sessionState.vault.accounts[idx].account = account;
+        sessionState.vault.accounts[idx].secret = secret;
+        sessionState.vault.accounts[idx].algo = algo;
+        sessionState.vault.accounts[idx].digits = algo === 'STEAM' ? 5 : 6;
+      }
+    } else {
+      sessionState.vault.accounts.push({
+        id: window.crypto.randomUUID(),
+        issuer,
+        account,
+        secret,
+        algo,
+        digits: algo === 'STEAM' ? 5 : 6,
+        period: 30,
+        createdAt: Date.now()
+      });
+    }
 
     await saveVault();
     addModal.classList.remove('active');
@@ -542,7 +583,7 @@ saveAccountBtn.addEventListener('click', async () => {
     document.getElementById('addSecretInput').value = '';
     renderAccountListStructure();
     updateTotpCodesInPlace();
-    showToast('新 2FA 账号添加并同步成功！');
+    showToast(accountToEditId ? '账号更新并同步成功！' : '新 2FA 账号添加并同步成功！');
   } catch (err) {
     alert('保存账号失败: ' + err.message);
   } finally {

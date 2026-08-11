@@ -415,8 +415,8 @@ body {
   background: var(--primary-light);
 }
 
-/* Delete Account Button */
-.delete-account-btn {
+/* Action Buttons (Edit / Delete) */
+.delete-account-btn, .edit-account-btn {
   width: 36px;
   height: 36px;
   border-radius: var(--radius-sm);
@@ -431,13 +431,19 @@ body {
   opacity: 0.6;
 }
 
-.account-card-pro:hover .delete-account-btn {
+.account-card-pro:hover .delete-account-btn,
+.account-card-pro:hover .edit-account-btn {
   opacity: 1;
 }
 
 .delete-account-btn:hover {
   background: rgba(239, 68, 68, 0.15);
   color: var(--destructive);
+}
+
+.edit-account-btn:hover {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent);
 }
 
 /* Progress Ring Timer with Tabular Nums */
