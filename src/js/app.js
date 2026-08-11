@@ -1,7 +1,7 @@
 import { initTheme, toggleTheme } from './theme.js';
 import { deriveDeterministicSalts, deriveKeysWithWorker, encryptVaultPayload, decryptVaultPayload, base64ToBuffer, bufferToBase64 } from './crypto.js';
 import { generateTOTP, getSecondsRemaining } from './totp.js';
-import { getStoredEncryptedVault, saveEncryptedVaultLocal, fetchCloudVault, pushCloudVault } from './storage.js';
+import { getStoredEncryptedVault, saveEncryptedVaultLocal, fetchCloudVault, pushCloudVault, deleteCloudVault } from './storage.js';
 import { scanQrCodeFromImageFile, parseOtpauthUri } from './qr-parser.js';
 
 let sessionState = {
@@ -482,12 +482,19 @@ async function handleMasterPasswordChange() {
     const { saltEnc: newSaltEnc, saltAuth: newSaltAuth } = await deriveDeterministicSalts(newPw);
     const { kEnc: kEncNew, kAuthHash: kAuthHashNew } = await deriveKeysWithWorker(newPw, newSaltEnc, newSaltAuth);
 
+    const oldAuthHash = sessionState.kAuthHash;
+
     sessionState.kEnc = kEncNew;
     sessionState.kAuthHash = kAuthHashNew;
     sessionState.saltEncB64 = bufferToBase64(newSaltEnc);
     sessionState.saltAuthB64 = bufferToBase64(newSaltAuth);
 
     await saveVault();
+
+    // Destroy the old cloud vault since the user has migrated to a new identity hash
+    if (oldAuthHash) {
+      await deleteCloudVault(oldAuthHash);
+    }
 
     settingsModal.classList.remove('active');
     showToast('主密码修改成功！');

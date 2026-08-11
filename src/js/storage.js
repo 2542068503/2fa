@@ -63,3 +63,17 @@ export async function pushCloudVault(kAuthHash, encryptedObj) {
     return { success: false, error: err.message };
   }
 }
+
+export async function deleteCloudVault(kAuthHash) {
+  try {
+    const res = await fetch('/api/sync', {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${kAuthHash}`
+      }
+    });
+    return { success: res.status === 200 };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
