@@ -502,7 +502,12 @@ async function handleMasterPasswordChange() {
     // Push a tombstone to the old cloud vault since the user has migrated to a new identity hash.
     // This immediately invalidates the old password across all devices.
     if (oldAuthHash) {
-      await pushCloudVault({ tombstone: true }, oldAuthHash);
+      const tsRes = await pushCloudVault({ tombstone: true }, oldAuthHash);
+      if (!tsRes.success) {
+        console.error('Failed to tombstone old password', tsRes);
+      } else {
+        console.log('Successfully tombstoned old password hash:', oldAuthHash);
+      }
     }
 
     settingsModal.classList.remove('active');
