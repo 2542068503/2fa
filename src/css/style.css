@@ -18,6 +18,7 @@
   --primary-hover: #262626;
   --primary-light: rgba(23, 23, 23, 0.08);
   --accent: #7C3AED;
+  --accent-content: #FFFFFF;
   --accent-hover: #6D28D9;
   --destructive: #DC2626;
   --destructive-hover: #B91C1C;
@@ -57,6 +58,7 @@
   --primary-hover: #E5E5E5;
   --primary-light: rgba(250, 250, 250, 0.15);
   --accent: #A78BFA;
+  --accent-content: #171717;
   --accent-hover: #C4B5FD;
   --destructive: #F87171;
   --destructive-hover: #EF4444;
@@ -117,13 +119,13 @@ body {
 .brand-icon {
   width: 44px;
   height: 44px;
-  background: linear-gradient(135deg, var(--primary), var(--accent));
+  background: var(--accent);
   border-radius: var(--radius);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  box-shadow: 0 4px 12px rgba(23, 23, 23, 0.2);
+  color: var(--accent-content);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
 }
 
 .header-actions {
@@ -214,8 +216,8 @@ body {
 
 /* Buttons */
 .btn-primary {
-  background: var(--primary);
-  color: var(--primary-content);
+  background: var(--accent);
+  color: var(--accent-content);
   border: none;
   border-radius: var(--radius);
   height: 44px;
@@ -228,7 +230,7 @@ body {
   justify-content: center;
   gap: 0.5rem;
   transition: var(--transition);
-  box-shadow: 0 4px 14px rgba(23, 23, 23, 0.15);
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.2);
 }
 
 .btn-primary:active {
@@ -236,7 +238,8 @@ body {
 }
 
 .btn-primary:hover {
-  box-shadow: 0 6px 20px rgba(23, 23, 23, 0.25);
+  background: var(--accent-hover);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3);
 }
 
 .btn-icon-only {
