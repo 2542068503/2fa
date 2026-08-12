@@ -138,7 +138,9 @@ async function handleUnlockOrCreate() {
 
     showDashboard();
   } catch (err) {
-    console.error(err);
+    if (err.message !== 'UNAUTHORIZED_ADMIN') {
+      console.error(err);
+    }
     if (err.message === 'UNAUTHORIZED_ADMIN') {
       lockError.textContent = '环境变量 ADMIN 鉴权失败！密码错误。';
     } else if (err.message && err.message.includes('reading \'digest\'')) {

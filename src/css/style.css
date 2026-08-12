@@ -1,21 +1,21 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
 :root {
-  /* Light Theme Palette (Exaggerated Minimalism) */
-  --bg-main: #F8FAFC;
+  /* Light Theme Palette (Monochrome + Emerald) */
+  --bg-main: #FAFAFA;
   --bg-card: #FFFFFF;
-  --bg-card-hover: #F1F5F9;
+  --bg-card-hover: #F5F5F5;
   --bg-input: #FFFFFF;
   --bg-modal: #FFFFFF;
   
-  --text-primary: #0F172A;
-  --text-secondary: #334155;
-  --text-muted: #64748B;
+  --text-primary: #171717;
+  --text-secondary: #525252;
+  --text-muted: #737373;
   
-  --primary: #1E3A5F;
-  --primary-hover: #0F1D2F;
-  --primary-light: rgba(30, 58, 95, 0.08);
-  --accent: #059669;
+  --primary: #059669;
+  --primary-hover: #047857;
+  --primary-light: rgba(5, 150, 105, 0.08);
+  --accent: #10B981;
   --accent-hover: #047857;
   --destructive: #DC2626;
   --destructive-hover: #B91C1C;
@@ -37,21 +37,21 @@
 }
 
 [data-theme="dark"] {
-  /* Dark Theme Palette */
-  --bg-main: #090B0F;
-  --bg-card: #0F172A;
-  --bg-card-hover: #1E293B;
-  --bg-input: #0F172A;
-  --bg-modal: #0F172A;
+  /* Dark Theme Palette (Neutral + Emerald) */
+  --bg-main: #0A0A0A;
+  --bg-card: #171717;
+  --bg-card-hover: #262626;
+  --bg-input: #171717;
+  --bg-modal: #171717;
   
-  --text-primary: #F8FAFC;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
+  --text-primary: #FAFAFA;
+  --text-secondary: #A3A3A3;
+  --text-muted: #737373;
   
-  --primary: #38BDF8;
-  --primary-hover: #7DD3FC;
-  --primary-light: rgba(56, 189, 248, 0.15);
-  --accent: #34D399;
+  --primary: #34D399;
+  --primary-hover: #6EE7B7;
+  --primary-light: rgba(52, 211, 153, 0.15);
+  --accent: #10B981;
   --accent-hover: #6EE7B7;
   --destructive: #F87171;
   --destructive-hover: #EF4444;
@@ -117,7 +117,7 @@ body {
   align-items: center;
   justify-content: center;
   color: white;
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
 }
 
 .header-actions {
@@ -221,11 +221,11 @@ body {
   justify-content: center;
   gap: 0.5rem;
   transition: var(--transition);
-  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25);
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25);
 }
 
 .btn-primary:hover {
-  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35);
+  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.35);
 }
 
 .btn-icon-only {
