@@ -142,7 +142,7 @@ async function handleUnlockOrCreate() {
       console.error(err);
     }
     if (err.message === 'UNAUTHORIZED_ADMIN') {
-      lockError.textContent = '环境变量 ADMIN 鉴权失败！密码错误。';
+      lockError.textContent = '密码错误';
     } else if (err.message && err.message.includes('reading \'digest\'')) {
       lockError.textContent = '安全环境受限：必须使用 https:// 或 localhost 访问才能使用加密功能！';
     } else {
