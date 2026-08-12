@@ -32,6 +32,7 @@ const themeToggleBtn = document.getElementById('themeToggleBtn');
 const accountList = document.getElementById('accountList');
 const searchInput = document.getElementById('searchInput');
 const addAccountBtn = document.getElementById('addAccountBtn');
+const exportBtn = document.getElementById('exportBtn');
 const addModal = document.getElementById('addModal');
 const closeAddModalBtn = document.getElementById('closeAddModalBtn');
 const cancelAddBtn = document.getElementById('cancelAddBtn');
@@ -408,8 +409,25 @@ function startTimerLoop() {
   sessionState.timerInterval = setInterval(updateTotpCodesInPlace, 1000);
 }
 
-// Lock
+// Lock & Export
+exportBtn.addEventListener('click', exportToJSON);
 lockBtn.addEventListener('click', lockVault);
+
+function exportToJSON() {
+  if (!sessionState.vault || !sessionState.vault.accounts) return;
+  const data = JSON.stringify(sessionState.vault.accounts, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+  a.download = `2fa_vault_export_${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('数据已成功导出！');
+}
 
 function lockVault() {
   sessionState.kEnc = null;

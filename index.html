@@ -104,6 +104,14 @@
           </svg>
           <span>添加账号</span>
         </button>
+        <button id="exportBtn" class="btn-ghost" title="导出数据为 JSON">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>导出</span>
+        </button>
         <label for="qrFileInput" class="btn-ghost" style="cursor: pointer;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="7"></rect>
@@ -113,7 +121,7 @@
           </svg>
           <span>扫码识别</span>
         </label>
-        <input type="file" id="qrFileInput" accept="image/*" style="display: none;" />
+        <input type="file" id="qrFileInput" accept="image/*" capture="environment" style="display: none;" />
       </div>
       </div> <!-- End Sticky Glass Header -->
 
