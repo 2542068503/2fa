@@ -33,6 +33,7 @@ const accountList = document.getElementById('accountList');
 const searchInput = document.getElementById('searchInput');
 const addAccountBtn = document.getElementById('addAccountBtn');
 const exportBtn = document.getElementById('exportBtn');
+const importFileInput = document.getElementById('importFileInput');
 const addModal = document.getElementById('addModal');
 const closeAddModalBtn = document.getElementById('closeAddModalBtn');
 const cancelAddBtn = document.getElementById('cancelAddBtn');
@@ -411,22 +412,100 @@ function startTimerLoop() {
 
 // Lock & Export
 exportBtn.addEventListener('click', exportToJSON);
+if (importFileInput) {
+  importFileInput.addEventListener('change', handleImportJSON);
+}
 lockBtn.addEventListener('click', lockVault);
 
 function exportToJSON() {
   if (!sessionState.vault || !sessionState.vault.accounts) return;
-  const data = JSON.stringify(sessionState.vault.accounts, null, 2);
+  
+  const exportData = sessionState.vault.accounts.map(acc => {
+    const { id, createdAt, ...rest } = acc;
+    return rest;
+  });
+  
+  const data = JSON.stringify(exportData, null, 2);
   const blob = new Blob([data], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+  
+  const now = new Date();
+  const dateStr = now.getFullYear() +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    String(now.getDate()).padStart(2, '0') + '_' +
+    String(now.getHours()).padStart(2, '0') +
+    String(now.getMinutes()).padStart(2, '0') +
+    String(now.getSeconds()).padStart(2, '0');
+    
   a.download = `2fa_vault_export_${dateStr}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   showToast('数据已成功导出！');
+}
+
+function handleImportJSON(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async function(event) {
+    try {
+      const importedData = JSON.parse(event.target.result);
+      if (!Array.isArray(importedData)) {
+        throw new Error('JSON 数据格式不正确，必须是一个数组。');
+      }
+
+      let addedCount = 0;
+      let duplicateCount = 0;
+      
+      const existingSecrets = new Set(sessionState.vault.accounts.map(acc => acc.secret));
+
+      for (const item of importedData) {
+        if (!item.secret) continue;
+        
+        if (existingSecrets.has(item.secret)) {
+          duplicateCount++;
+          continue;
+        }
+
+        const newAccount = {
+          id: crypto.randomUUID(),
+          issuer: item.issuer || 'Unknown',
+          account: item.account || '',
+          secret: item.secret,
+          algo: item.algo || 'SHA1',
+          digits: item.digits || 6,
+          period: item.period || 30,
+          pinned: item.pinned || false,
+          createdAt: Date.now()
+        };
+
+        sessionState.vault.accounts.push(newAccount);
+        existingSecrets.add(item.secret);
+        addedCount++;
+      }
+
+      if (addedCount > 0) {
+        await saveVault();
+        renderAccountListStructure();
+        updateTotpCodesInPlace();
+        showToast(`成功导入 ${addedCount} 个账号！${duplicateCount > 0 ? ` (跳过 ${duplicateCount} 个重复项)` : ''}`);
+      } else if (duplicateCount > 0) {
+        showToast(`没有导入新账号，跳过了 ${duplicateCount} 个重复项。`);
+      } else {
+        showToast('文件中未找到有效的账号数据。');
+      }
+    } catch (err) {
+      showToast('导入失败：' + err.message);
+    }
+    
+    e.target.value = '';
+  };
+  reader.readAsText(file);
 }
 
 function lockVault() {
