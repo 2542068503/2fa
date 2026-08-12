@@ -3,6 +3,7 @@
 :root {
   /* Light Theme Palette (Monochrome + Emerald) */
   --bg-main: #FAFAFA;
+  --bg-main-rgb: 250, 250, 250;
   --bg-card: #FFFFFF;
   --bg-card-hover: #F5F5F5;
   --bg-input: #FFFFFF;
@@ -27,18 +28,20 @@
   --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -1px rgba(15, 23, 42, 0.03);
   --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.05), 0 4px 6px -2px rgba(15, 23, 42, 0.02);
 
-  --radius: 6px;
+  --radius: 16px;
+  --radius-lg: 24px;
   --radius-full: 9999px;
   
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
   
-  --transition: all 0.2s ease;
+  --transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 [data-theme="dark"] {
   /* Dark Theme Palette (Neutral + Emerald) */
   --bg-main: #0A0A0A;
+  --bg-main-rgb: 10, 10, 10;
   --bg-card: #171717;
   --bg-card-hover: #262626;
   --bg-input: #171717;
@@ -95,7 +98,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  padding: 2rem 0 1rem;
+  margin-bottom: 0;
 }
 
 .brand-logo {
@@ -140,6 +144,7 @@ body {
   max-width: 420px;
   margin: 3rem auto 0;
   text-align: center;
+  border-radius: var(--radius-lg);
 }
 
 .lock-shield-icon {
@@ -224,6 +229,10 @@ body {
   box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25);
 }
 
+.btn-primary:active {
+  transform: scale(0.96);
+}
+
 .btn-primary:hover {
   box-shadow: 0 6px 20px rgba(5, 150, 105, 0.35);
 }
@@ -240,6 +249,10 @@ body {
   justify-content: center;
   cursor: pointer;
   transition: var(--transition);
+}
+
+.btn-icon-only:active {
+  transform: scale(0.92);
 }
 
 .btn-icon-only:hover {
@@ -264,16 +277,33 @@ body {
   transition: var(--transition);
 }
 
+.btn-ghost:active {
+  transform: scale(0.96);
+}
+
 .btn-ghost:hover {
   color: var(--text-primary);
   background: var(--bg-card-hover);
+}
+
+/* Sticky Glass Header */
+.sticky-glass-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(var(--bg-main-rgb), 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  padding: 1rem 0;
+  margin: 0 -1.25rem 1rem -1.25rem;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
 }
 
 /* Dashboard Toolbar */
 .toolbar {
   display: flex;
   gap: 0.75rem;
-  margin-bottom: 1.5rem;
   flex-wrap: wrap;
 }
 
@@ -325,10 +355,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+.account-card-pro:active {
+  transform: scale(0.98);
 }
 
 .account-card-pro:hover {
@@ -407,9 +441,13 @@ body {
   cursor: pointer;
   padding: 0.25rem 0.5rem;
   border-radius: var(--radius);
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.1s ease;
   min-width: 140px;
   text-align: center;
+}
+
+.totp-code-display:active {
+  transform: scale(0.96);
 }
 
 .totp-code-display:hover {
@@ -530,17 +568,19 @@ body {
 .modal-content {
   background: var(--bg-modal);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   max-width: 480px;
   width: 100%;
-  padding: 2rem;
-  transform: translateY(10px);
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 2.5rem;
+  transform: translateY(100px) scale(0.95);
+  opacity: 0;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
 }
 
 .modal-backdrop.active .modal-content {
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
+  opacity: 1;
 }
 
 .modal-header {
