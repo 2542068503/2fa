@@ -47,17 +47,21 @@
 
     <!-- Lock View -->
     <div id="lockView" class="glass-panel lock-wrapper">
-      <div class="lock-shield-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-        </svg>
+      <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+        <div class="lock-shield-icon" style="margin: 0; width: 48px; height: 48px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </div>
+        <h2 id="lockTitle" class="lock-title" style="margin: 0;">解锁验证器</h2>
       </div>
-      <h2 id="lockTitle" class="lock-title">解锁密码库</h2>
-      <p id="lockDesc" class="lock-subtitle">输入您的主密码（Master Password）以解密 2FA 动态验证码。</p>
       
-      <div class="input-wrapper">
-        <input type="password" id="masterPasswordInput" class="input-control" placeholder="输入主密码" autocomplete="new-password" spellcheck="false" autofocus />
-        <button id="togglePwVisibility" class="input-icon-end" type="button" aria-label="Toggle password visibility">
+      <p id="lockDesc" class="lock-subtitle">输入您的控制台 ADMIN 环境变量密码。</p>
+      
+      <div class="input-wrapper" style="margin-top: 1.5rem;">
+        <label for="masterPasswordInput" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 0.5rem;">鉴权秘钥</label>
+        <input type="password" id="masterPasswordInput" class="input-control" placeholder="输入密码" autocomplete="new-password" spellcheck="false" autofocus />
+        <button id="togglePwVisibility" class="input-icon-end" type="button" aria-label="Toggle password visibility" style="top: calc(50% + 10px);">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
             <circle cx="12" cy="12" r="3"></circle>
@@ -65,14 +69,16 @@
         </button>
       </div>
 
-      <button id="unlockBtn" class="btn-primary" style="width: 100%;">
-        <span>解锁验证器</span>
+      <div id="lockError" style="color: var(--destructive); margin-bottom: 1rem; font-size: 0.9rem; font-weight: 500; display: none;"></div>
+
+      <button id="unlockBtn" class="btn-primary" style="width: 100%; justify-content: center;">
+        <span>登入 (Enter)</span>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="5" y1="12" x2="19" y2="12"></line>
           <polyline points="12 5 19 12 12 19"></polyline>
         </svg>
       </button>
-      <div id="lockError" style="color: var(--destructive); margin-top: 1rem; font-size: 0.9rem; font-weight: 500; display: none;"></div>
+      
       <div style="text-align: center; color: var(--text-muted); font-size: 0.75rem; margin-top: 2rem;">v1.0.0</div>
     </div>
 
