@@ -101,6 +101,12 @@ async function handleUnlockOrCreate() {
     // Query Cloud KV with clean Hex kAuthHash
     const { data: cloudData, timeOffsetMs } = await fetchCloudVault(kAuthHash);
     sessionState.timeOffsetMs = timeOffsetMs;
+
+    // Check local revoked hashes to mitigate Cloudflare KV 60s cache delay
+    const revoked = JSON.parse(localStorage.getItem('revokedHashes') || '[]');
+    if (revoked.includes(kAuthHash)) {
+      throw new Error('REVOKED');
+    }
     
     console.log('Fetched cloudData for login:', cloudData);
 
@@ -509,6 +515,13 @@ async function handleMasterPasswordChange() {
         console.error('Failed to tombstone old password', tsRes);
       } else {
         console.log('Successfully tombstoned old password hash:', oldAuthHash);
+      }
+      
+      // Add to local revoked list to instantly block old password on this device (bypassing KV cache delay)
+      const revoked = JSON.parse(localStorage.getItem('revokedHashes') || '[]');
+      if (!revoked.includes(oldAuthHash)) {
+        revoked.push(oldAuthHash);
+        localStorage.setItem('revokedHashes', JSON.stringify(revoked));
       }
     }
 
