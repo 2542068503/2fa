@@ -10,15 +10,19 @@ export function saveEncryptedVaultLocal(payload) {
   // Local caching completely disabled for pure cloud mode
 }
 
-export async function fetchCloudVault(kAuthHash) {
+export async function fetchCloudVault(adminSecret) {
   try {
     const res = await fetch('/api/sync', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${kAuthHash}`
+        'Authorization': `Bearer ${adminSecret}`
       },
       cache: 'no-store'
     });
+
+    if (res.status === 401) {
+      return { data: null, timeOffsetMs: 0, error: 'UNAUTHORIZED_ADMIN' };
+    }
 
     const dateHeader = res.headers.get('Date');
     let timeOffsetMs = 0;
@@ -33,22 +37,19 @@ export async function fetchCloudVault(kAuthHash) {
     }
     return { data: null, timeOffsetMs };
   } catch (err) {
-    return { data: null, timeOffsetMs: 0 };
+    return { data: null, timeOffsetMs: 0, error: err.message };
   }
 }
 
-export async function pushCloudVault(payload, kAuthHash, newAuthHash = null) {
+export async function pushCloudVault(payload, adminSecret) {
   try {
     const bodyPayload = { payload };
-    if (newAuthHash) {
-      bodyPayload.newAuthHash = newAuthHash;
-    }
 
     const res = await fetch('/api/sync', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${kAuthHash}`
+        'Authorization': `Bearer ${adminSecret}`
       },
       body: JSON.stringify(bodyPayload)
     });

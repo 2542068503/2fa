@@ -6,7 +6,7 @@ import { scanQrCodeFromImageFile, parseOtpauthUri } from './qr-parser.js';
 
 let sessionState = {
   kEnc: null,
-  kAuthHash: null,
+  adminSecret: null,
   saltEncB64: '',
   saltAuthB64: '',
   vault: null,
@@ -91,15 +91,20 @@ async function handleUnlockOrCreate() {
 
   try {
     const { saltEnc, saltAuth } = await deriveDeterministicSalts(password);
-    const { kEnc, kAuthHash } = await deriveKeysWithWorker(password, saltEnc, saltAuth);
+    const { kEnc } = await deriveKeysWithWorker(password, saltEnc, saltAuth);
 
     sessionState.kEnc = kEnc;
-    sessionState.kAuthHash = kAuthHash;
     sessionState.saltEncB64 = bufferToBase64(saltEnc);
     sessionState.saltAuthB64 = bufferToBase64(saltAuth);
 
-    // Query Cloud KV with clean Hex kAuthHash
-    const { data: cloudData, timeOffsetMs } = await fetchCloudVault(kAuthHash);
+    // Query Cloud KV using plaintext password (ADMIN secret auth)
+    const { data: cloudData, timeOffsetMs, error } = await fetchCloudVault(password);
+    
+    if (error === 'UNAUTHORIZED_ADMIN') {
+      throw new Error('UNAUTHORIZED_ADMIN');
+    }
+    
+    sessionState.adminSecret = password;
     sessionState.timeOffsetMs = timeOffsetMs;
     
     console.log('Fetched cloudData for login:', cloudData);
@@ -134,7 +139,9 @@ async function handleUnlockOrCreate() {
     showDashboard();
   } catch (err) {
     console.error(err);
-    if (err.message && err.message.includes('reading \'digest\'')) {
+    if (err.message === 'UNAUTHORIZED_ADMIN') {
+      lockError.textContent = '环境变量 ADMIN 鉴权失败！密码错误。';
+    } else if (err.message && err.message.includes('reading \'digest\'')) {
       lockError.textContent = '安全环境受限：必须使用 https:// 或 localhost 访问才能使用加密功能！';
     } else {
       lockError.textContent = err.message === 'INVALID_MAGIC' 
@@ -152,14 +159,13 @@ function showDashboard() {
   lockView.style.display = 'none';
   dashboardView.style.display = 'block';
   lockBtn.style.display = 'inline-flex';
-  settingsBtn.style.display = 'inline-flex';
   masterPasswordInput.value = '';
   renderAccountListStructure();
   updateTotpCodesInPlace();
   startTimerLoop();
 }
 
-async function saveVault(newAuthHash = null) {
+async function saveVault() {
   sessionState.vault.updatedAt = Date.now();
   const encrypted = await encryptVaultPayload(sessionState.vault, sessionState.kEnc);
 
@@ -172,7 +178,7 @@ async function saveVault(newAuthHash = null) {
     updatedAt: sessionState.vault.updatedAt
   };
 
-  const syncRes = await pushCloudVault(payload, sessionState.kAuthHash, newAuthHash);
+  const syncRes = await pushCloudVault(payload, sessionState.adminSecret);
 
   if (syncRes && syncRes.conflict && syncRes.remotePayload) {
     // Merge conflict resolution
@@ -187,7 +193,7 @@ async function saveVault(newAuthHash = null) {
       sessionState.vault.updatedAt = Date.now();
       const mergedEncrypted = await encryptVaultPayload(sessionState.vault, sessionState.kEnc);
       const mergedPayload = { ...payload, iv: mergedEncrypted.iv, ciphertext: mergedEncrypted.ciphertext, updatedAt: sessionState.vault.updatedAt };
-      await pushCloudVault(mergedPayload, sessionState.kAuthHash, newAuthHash);
+      await pushCloudVault(mergedPayload, sessionState.adminSecret);
     } catch (e) {}
   }
 }
@@ -405,89 +411,12 @@ lockBtn.addEventListener('click', lockVault);
 
 function lockVault() {
   sessionState.kEnc = null;
-  sessionState.kAuthHash = null;
+  sessionState.adminSecret = null;
   sessionState.vault = null;
   if (sessionState.timerInterval) clearInterval(sessionState.timerInterval);
   dashboardView.style.display = 'none';
   lockView.style.display = 'block';
   lockBtn.style.display = 'none';
-  settingsBtn.style.display = 'none';
-}
-
-// Settings Modal & Master Password Change Flow
-settingsBtn.addEventListener('click', () => {
-  currentPasswordInput.value = '';
-  newPasswordInput.value = '';
-  confirmNewPasswordInput.value = '';
-  settingsError.style.display = 'none';
-  settingsModal.classList.add('active');
-});
-
-closeSettingsModalBtn.addEventListener('click', () => settingsModal.classList.remove('active'));
-cancelSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('active'));
-
-updatePasswordBtn.addEventListener('click', handleMasterPasswordChange);
-
-async function handleMasterPasswordChange() {
-  const currentPw = currentPasswordInput.value;
-  const newPw = newPasswordInput.value;
-  const confirmPw = confirmNewPasswordInput.value;
-
-  if (!currentPw || !newPw || !confirmPw) {
-    settingsError.textContent = '请完整填写所有密码项！';
-    settingsError.style.display = 'block';
-    return;
-  }
-
-  if (newPw !== confirmPw) {
-    settingsError.textContent = '两次输入的新密码不一致！';
-    settingsError.style.display = 'block';
-    return;
-  }
-
-  if (newPw.length < 4) {
-    settingsError.textContent = '新密码长度至少需要 4 位！';
-    settingsError.style.display = 'block';
-    return;
-  }
-
-  updatePasswordBtn.disabled = true;
-  updatePasswordBtn.textContent = '密钥重新派生中...';
-  settingsError.style.display = 'none';
-
-  try {
-    const { saltEnc: currentSaltEnc, saltAuth: currentSaltAuth } = await deriveDeterministicSalts(currentPw);
-    const { kAuthHash: verifyAuthHash } = await deriveKeysWithWorker(currentPw, currentSaltEnc, currentSaltAuth);
-    
-    // Verify current master password
-    if (verifyAuthHash !== sessionState.kAuthHash) {
-      throw new Error('INVALID_MAGIC');
-    }
-
-    // Re-encrypt vault under new master password
-    const { saltEnc: newSaltEnc, saltAuth: newSaltAuth } = await deriveDeterministicSalts(newPw);
-    const { kEnc: kEncNew, kAuthHash: kAuthHashNew } = await deriveKeysWithWorker(newPw, newSaltEnc, newSaltAuth);
-
-    // Apply new encryption key for saving
-    sessionState.kEnc = kEncNew;
-    sessionState.saltEncB64 = bufferToBase64(newSaltEnc);
-    sessionState.saltAuthB64 = bufferToBase64(newSaltAuth);
-
-    // Push to cloud WITH newAuthHash using the OLD kAuthHash for auth
-    await saveVault(kAuthHashNew);
-
-    // After success, officially update the session's auth token
-    sessionState.kAuthHash = kAuthHashNew;
-
-    settingsModal.classList.remove('active');
-    showToast('主密码修改成功！');
-  } catch (err) {
-    settingsError.textContent = err.message === 'INVALID_MAGIC' ? '当前主密码不正确！' : '修改失败: ' + err.message;
-    settingsError.style.display = 'block';
-  } finally {
-    updatePasswordBtn.disabled = false;
-    updatePasswordBtn.textContent = '确认更新密码';
-  }
 }
 
 // Hotkeys: '/' focus search, 'Esc' lock or close modals
@@ -499,8 +428,6 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (addModal.classList.contains('active')) {
       addModal.classList.remove('active');
-    } else if (settingsModal.classList.contains('active')) {
-      settingsModal.classList.remove('active');
     } else if (deleteConfirmModal.classList.contains('active')) {
       deleteConfirmModal.classList.remove('active');
     } else if (sessionState.vault) {

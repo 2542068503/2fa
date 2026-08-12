@@ -35,12 +35,6 @@
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
           </svg>
         </button>
-        <button id="settingsBtn" class="btn-icon-only" style="display: none;" title="设置与修改主密码" aria-label="Settings">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
-        </button>
         <button id="lockBtn" class="btn-ghost" style="display: none;" title="锁定加密库">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
@@ -79,7 +73,7 @@
         </svg>
       </button>
       <div id="lockError" style="color: var(--destructive); margin-top: 1rem; font-size: 0.9rem; font-weight: 500; display: none;"></div>
-      <div style="text-align: center; color: var(--text-muted); font-size: 0.75rem; margin-top: 2rem;">v1.2.0</div>
+      <div style="text-align: center; color: var(--text-muted); font-size: 0.75rem; margin-top: 2rem;">v1.3.0</div>
     </div>
 
     <!-- Main Dashboard View -->
@@ -161,43 +155,6 @@
     </div>
   </div>
 
-  <!-- Settings / Change Master Password Modal -->
-  <div id="settingsModal" class="modal-backdrop">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 class="modal-title">修改主密码</h3>
-        <button id="closeSettingsModalBtn" class="btn-icon-only" style="border: none; background: transparent;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-
-      <div class="input-wrapper">
-        <label style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">当前主密码</label>
-        <input type="password" id="currentPasswordInput" class="input-control" placeholder="输入当前主密码" />
-      </div>
-
-      <div class="input-wrapper">
-        <label style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">新主密码</label>
-        <input type="password" id="newPasswordInput" class="input-control" placeholder="输入新主密码" />
-      </div>
-
-      <div class="input-wrapper">
-        <label style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">确认新主密码</label>
-        <input type="password" id="confirmNewPasswordInput" class="input-control" placeholder="再次输入新主密码" />
-      </div>
-
-      <div id="settingsError" style="color: var(--destructive); margin-bottom: 1rem; font-size: 0.9rem; font-weight: 500; display: none;"></div>
-
-      <div class="modal-actions">
-        <button id="cancelSettingsBtn" class="btn-ghost">取消</button>
-        <button id="updatePasswordBtn" class="btn-primary">确认更新密码</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Delete Account Confirmation Modal -->
   <div id="deleteConfirmModal" class="modal-backdrop">
     <div class="modal-content" style="max-width: 400px; text-align: center;">
@@ -227,6 +184,6 @@
     <span id="toastText">验证码已复制到剪贴板！</span>
   </div>
 
-  <script type="module" src="./src/js/app.js?v=1.2.0"></script>
+  <script type="module" src="./src/js/app.js?v=1.3.0"></script>
 </body>
 </html>
