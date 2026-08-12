@@ -14,6 +14,7 @@
   --text-muted: #737373;
   
   --primary: #171717;
+  --primary-content: #FFFFFF;
   --primary-hover: #262626;
   --primary-light: rgba(23, 23, 23, 0.08);
   --accent: #7C3AED;
@@ -52,6 +53,7 @@
   --text-muted: #737373;
   
   --primary: #FAFAFA;
+  --primary-content: #171717;
   --primary-hover: #E5E5E5;
   --primary-light: rgba(250, 250, 250, 0.15);
   --accent: #A78BFA;
@@ -212,8 +214,8 @@ body {
 
 /* Buttons */
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
-  color: white;
+  background: var(--primary);
+  color: var(--primary-content);
   border: none;
   border-radius: var(--radius);
   height: 44px;

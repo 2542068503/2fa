@@ -56,17 +56,19 @@
         <h2 id="lockTitle" class="lock-title" style="margin: 0;">解锁验证器</h2>
       </div>
       
-      <p id="lockDesc" class="lock-subtitle">输入您的控制台 ADMIN 环境变量密码。</p>
+      <p id="lockDesc" class="lock-subtitle">请输入您的访问秘钥以进入系统。</p>
       
-      <div class="input-wrapper" style="margin-top: 1.5rem;">
+      <div style="margin-top: 1.5rem; text-align: left;">
         <label for="masterPasswordInput" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 0.5rem;">鉴权秘钥</label>
-        <input type="password" id="masterPasswordInput" class="input-control" placeholder="输入密码" autocomplete="new-password" spellcheck="false" autofocus />
-        <button id="togglePwVisibility" class="input-icon-end" type="button" aria-label="Toggle password visibility" style="top: calc(50% + 10px);">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
-        </button>
+        <div class="input-wrapper" style="margin-bottom: 1.25rem;">
+          <input type="password" id="masterPasswordInput" class="input-control" placeholder="输入密码" autocomplete="new-password" spellcheck="false" autofocus />
+          <button id="togglePwVisibility" class="input-icon-end" type="button" aria-label="Toggle password visibility">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div id="lockError" style="color: var(--destructive); margin-bottom: 1rem; font-size: 0.9rem; font-weight: 500; display: none;"></div>
