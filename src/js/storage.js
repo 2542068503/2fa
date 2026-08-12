@@ -63,3 +63,27 @@ export async function pushCloudVault(kAuthHash, encryptedObj) {
     return { success: false, error: err.message };
   }
 }
+
+export async function tombstoneCloudVault(kAuthHash) {
+  try {
+    // 1. Explicitly DELETE the old vault first
+    await fetch('/api/sync', {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${kAuthHash}` }
+    });
+
+    // 2. Place a tombstone so other offline devices know it was revoked
+    const res = await fetch('/api/sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${kAuthHash}`
+      },
+      body: JSON.stringify({ payload: { tombstone: true, updatedAt: Number.MAX_SAFE_INTEGER } })
+    });
+    
+    return { success: res.status === 200 };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}

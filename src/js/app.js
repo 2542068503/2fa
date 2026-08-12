@@ -1,7 +1,7 @@
 import { initTheme, toggleTheme } from './theme.js';
 import { deriveDeterministicSalts, deriveKeysWithWorker, encryptVaultPayload, decryptVaultPayload, base64ToBuffer, bufferToBase64 } from './crypto.js';
 import { generateTOTP, getSecondsRemaining } from './totp.js';
-import { getStoredEncryptedVault, saveEncryptedVaultLocal, fetchCloudVault, pushCloudVault } from './storage.js';
+import { getStoredEncryptedVault, saveEncryptedVaultLocal, fetchCloudVault, pushCloudVault, tombstoneCloudVault } from './storage.js';
 import { scanQrCodeFromImageFile, parseOtpauthUri } from './qr-parser.js';
 
 let sessionState = {
@@ -504,7 +504,7 @@ async function handleMasterPasswordChange() {
     // Push a tombstone to the old cloud vault since the user has migrated to a new identity hash.
     // This immediately invalidates the old password across all devices.
     if (oldAuthHash) {
-      const tsRes = await pushCloudVault({ tombstone: true }, oldAuthHash);
+      const tsRes = await tombstoneCloudVault(oldAuthHash);
       if (!tsRes.success) {
         console.error('Failed to tombstone old password', tsRes);
       } else {
