@@ -23,7 +23,10 @@ export default {
       if (request.method === 'GET') {
         let data = null;
         if (kv) {
-          data = await kv.get(`vault:${token}`, { type: 'json' });
+          const existing = await kv.get('vault:singleton', { type: 'json' });
+          if (existing) {
+            data = existing.payload;
+          }
         }
         return new Response(JSON.stringify({ data }), {
           status: 200,
@@ -40,15 +43,17 @@ export default {
       if (request.method === 'POST') {
         try {
           const body = await request.json();
-          const { payload } = body;
+          const { payload, newAuthHash } = body;
 
           if (kv && payload) {
-            const existing = await kv.get(`vault:${token}`, { type: 'json' });
-            if (existing && existing.updatedAt > payload.updatedAt) {
+            const existing = await kv.get('vault:singleton', { type: 'json' });
+            
+            // If vault exists, verify the old authHash matches the Authorization token
+            if (existing && existing.authHash && existing.authHash !== token) {
               return new Response(
-                JSON.stringify({ error: 'CONFLICT', remotePayload: existing }),
+                JSON.stringify({ error: 'UNAUTHORIZED_HASH' }),
                 {
-                  status: 409,
+                  status: 401,
                   headers: { 
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*'
@@ -56,7 +61,14 @@ export default {
                 }
               );
             }
-            await kv.put(`vault:${token}`, JSON.stringify(payload));
+
+            // Save new payload and either the newAuthHash (if changing password) or the existing token
+            const vaultData = {
+              authHash: newAuthHash || token,
+              payload: payload
+            };
+
+            await kv.put('vault:singleton', JSON.stringify(vaultData));
           }
 
           return new Response(JSON.stringify({ success: true }), {
@@ -78,30 +90,10 @@ export default {
         return new Response(null, {
           headers: {
             'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
             'Access-Control-Allow-Headers': 'Content-Type, Authorization'
           }
         });
-      }
-
-      if (request.method === 'DELETE') {
-        try {
-          if (kv) {
-            await kv.delete(`vault:${token}`);
-          }
-          return new Response(JSON.stringify({ success: true }), {
-            status: 200,
-            headers: { 
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*'
-            }
-          });
-        } catch (e) {
-          return new Response(JSON.stringify({ error: e.message }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-          });
-        }
       }
     }
 

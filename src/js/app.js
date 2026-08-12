@@ -1,7 +1,7 @@
 import { initTheme, toggleTheme } from './theme.js';
 import { deriveDeterministicSalts, deriveKeysWithWorker, encryptVaultPayload, decryptVaultPayload, base64ToBuffer, bufferToBase64 } from './crypto.js';
 import { generateTOTP, getSecondsRemaining } from './totp.js';
-import { getStoredEncryptedVault, saveEncryptedVaultLocal, fetchCloudVault, pushCloudVault, tombstoneCloudVault } from './storage.js';
+import { fetchCloudVault, pushCloudVault } from './storage.js';
 import { scanQrCodeFromImageFile, parseOtpauthUri } from './qr-parser.js';
 
 let sessionState = {
@@ -101,20 +101,8 @@ async function handleUnlockOrCreate() {
     // Query Cloud KV with clean Hex kAuthHash
     const { data: cloudData, timeOffsetMs } = await fetchCloudVault(kAuthHash);
     sessionState.timeOffsetMs = timeOffsetMs;
-
-    // Check local revoked hashes to mitigate Cloudflare KV 60s cache delay
-    const revoked = JSON.parse(localStorage.getItem('revokedHashes') || '[]');
-    if (revoked.includes(kAuthHash)) {
-      throw new Error('REVOKED');
-    }
     
     console.log('Fetched cloudData for login:', cloudData);
-
-    if (cloudData && cloudData.tombstone) {
-      // The password was explicitly changed/revoked on another device
-      localStorage.removeItem('encryptedVault');
-      throw new Error('REVOKED');
-    }
 
     let decrypted = null;
     let hasExistingData = false;
@@ -123,21 +111,8 @@ async function handleUnlockOrCreate() {
       hasExistingData = true;
       try {
         decrypted = await decryptVaultPayload(cloudData.iv, cloudData.ciphertext, kEnc);
-        saveEncryptedVaultLocal(cloudData);
       } catch (err) {
         throw new Error('INVALID_MAGIC');
-      }
-    }
-
-    if (!decrypted) {
-      const localEncrypted = getStoredEncryptedVault();
-      if (localEncrypted && localEncrypted.ciphertext) {
-        hasExistingData = true;
-        try {
-          decrypted = await decryptVaultPayload(localEncrypted.iv, localEncrypted.ciphertext, kEnc);
-        } catch (err) {
-          throw new Error('INVALID_MAGIC');
-        }
       }
     }
 
@@ -161,11 +136,9 @@ async function handleUnlockOrCreate() {
     console.error(err);
     if (err.message && err.message.includes('reading \'digest\'')) {
       lockError.textContent = '安全环境受限：必须使用 https:// 或 localhost 访问才能使用加密功能！';
-    } else if (err.message === 'REVOKED') {
-      lockError.textContent = '该密码已被修改并作废！请使用最新密码登入。';
     } else {
       lockError.textContent = err.message === 'INVALID_MAGIC' 
-        ? '密码不正确！请重新输入' 
+        ? '原主密码错误！' 
         : '密码库解密失败！(' + (err.message || '未知错误') + ')';
     }
     lockError.style.display = 'block';
@@ -186,7 +159,7 @@ function showDashboard() {
   startTimerLoop();
 }
 
-async function saveVault() {
+async function saveVault(newAuthHash = null) {
   sessionState.vault.updatedAt = Date.now();
   const encrypted = await encryptVaultPayload(sessionState.vault, sessionState.kEnc);
 
@@ -199,8 +172,7 @@ async function saveVault() {
     updatedAt: sessionState.vault.updatedAt
   };
 
-  saveEncryptedVaultLocal(payload);
-  const syncRes = await pushCloudVault(sessionState.kAuthHash, payload);
+  const syncRes = await pushCloudVault(payload, sessionState.kAuthHash, newAuthHash);
 
   if (syncRes && syncRes.conflict && syncRes.remotePayload) {
     // Merge conflict resolution
@@ -215,8 +187,7 @@ async function saveVault() {
       sessionState.vault.updatedAt = Date.now();
       const mergedEncrypted = await encryptVaultPayload(sessionState.vault, sessionState.kEnc);
       const mergedPayload = { ...payload, iv: mergedEncrypted.iv, ciphertext: mergedEncrypted.ciphertext, updatedAt: sessionState.vault.updatedAt };
-      saveEncryptedVaultLocal(mergedPayload);
-      await pushCloudVault(sessionState.kAuthHash, mergedPayload);
+      await pushCloudVault(mergedPayload, sessionState.kAuthHash, newAuthHash);
     } catch (e) {}
   }
 }
@@ -486,44 +457,27 @@ async function handleMasterPasswordChange() {
 
   try {
     const { saltEnc: currentSaltEnc, saltAuth: currentSaltAuth } = await deriveDeterministicSalts(currentPw);
-    const { kEnc: verifyKEnc } = await deriveKeysWithWorker(currentPw, currentSaltEnc, currentSaltAuth);
+    const { kAuthHash: verifyAuthHash } = await deriveKeysWithWorker(currentPw, currentSaltEnc, currentSaltAuth);
     
     // Verify current master password
-    const localVault = getStoredEncryptedVault();
-    if (localVault && localVault.ciphertext) {
-      await decryptVaultPayload(localVault.iv, localVault.ciphertext, verifyKEnc);
+    if (verifyAuthHash !== sessionState.kAuthHash) {
+      throw new Error('INVALID_MAGIC');
     }
 
     // Re-encrypt vault under new master password
     const { saltEnc: newSaltEnc, saltAuth: newSaltAuth } = await deriveDeterministicSalts(newPw);
     const { kEnc: kEncNew, kAuthHash: kAuthHashNew } = await deriveKeysWithWorker(newPw, newSaltEnc, newSaltAuth);
 
-    const oldAuthHash = sessionState.kAuthHash;
-
+    // Apply new encryption key for saving
     sessionState.kEnc = kEncNew;
-    sessionState.kAuthHash = kAuthHashNew;
     sessionState.saltEncB64 = bufferToBase64(newSaltEnc);
     sessionState.saltAuthB64 = bufferToBase64(newSaltAuth);
 
-    await saveVault();
+    // Push to cloud WITH newAuthHash using the OLD kAuthHash for auth
+    await saveVault(kAuthHashNew);
 
-    // Push a tombstone to the old cloud vault since the user has migrated to a new identity hash.
-    // This immediately invalidates the old password across all devices.
-    if (oldAuthHash) {
-      const tsRes = await tombstoneCloudVault(oldAuthHash);
-      if (!tsRes.success) {
-        console.error('Failed to tombstone old password', tsRes);
-      } else {
-        console.log('Successfully tombstoned old password hash:', oldAuthHash);
-      }
-      
-      // Add to local revoked list to instantly block old password on this device (bypassing KV cache delay)
-      const revoked = JSON.parse(localStorage.getItem('revokedHashes') || '[]');
-      if (!revoked.includes(oldAuthHash)) {
-        revoked.push(oldAuthHash);
-        localStorage.setItem('revokedHashes', JSON.stringify(revoked));
-      }
-    }
+    // After success, officially update the session's auth token
+    sessionState.kAuthHash = kAuthHashNew;
 
     settingsModal.classList.remove('active');
     showToast('主密码修改成功！');
