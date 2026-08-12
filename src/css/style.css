@@ -77,10 +77,13 @@
   padding: 0;
 }
 
+body, input, button, select, textarea {
+  font-family: var(--font-sans);
+}
+
 body {
   background-color: var(--bg-main);
   color: var(--text-primary);
-  font-family: var(--font-sans);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
