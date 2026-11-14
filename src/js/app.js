@@ -27,8 +27,11 @@ const togglePwVisibility = document.getElementById('togglePwVisibility');
 const unlockBtn = document.getElementById('unlockBtn');
 const lockError = document.getElementById('lockError');
 const lockBtn = document.getElementById('lockBtn');
-const settingsBtn = document.getElementById('settingsBtn');
 const themeToggleBtn = document.getElementById('themeToggleBtn');
+const helpBtn = document.getElementById('helpBtn');
+const helpModal = document.getElementById('helpModal');
+const closeHelpModalBtn = document.getElementById('closeHelpModalBtn');
+const confirmHelpBtn = document.getElementById('confirmHelpBtn');
 const accountList = document.getElementById('accountList');
 const searchInput = document.getElementById('searchInput');
 const addAccountBtn = document.getElementById('addAccountBtn');
@@ -41,16 +44,6 @@ const saveAccountBtn = document.getElementById('saveAccountBtn');
 const qrFileInput = document.getElementById('qrFileInput');
 const toast = document.getElementById('toast');
 const toastText = document.getElementById('toastText');
-
-// Settings Modal Elements
-const settingsModal = document.getElementById('settingsModal');
-const closeSettingsModalBtn = document.getElementById('closeSettingsModalBtn');
-const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
-const updatePasswordBtn = document.getElementById('updatePasswordBtn');
-const currentPasswordInput = document.getElementById('currentPasswordInput');
-const newPasswordInput = document.getElementById('newPasswordInput');
-const confirmNewPasswordInput = document.getElementById('confirmNewPasswordInput');
-const settingsError = document.getElementById('settingsError');
 
 // Delete Modal Elements
 const deleteConfirmModal = document.getElementById('deleteConfirmModal');
@@ -110,7 +103,7 @@ async function handleUnlockOrCreate() {
     }
     
     sessionState.adminSecret = password;
-    sessionState.timeOffsetMs = timeOffsetMs;
+    sessionState.timeOffsetMs = Number.isFinite(timeOffsetMs) ? timeOffsetMs : 0;
     
     console.log('Fetched cloudData for login:', cloudData);
 
@@ -186,6 +179,9 @@ async function saveVault() {
   };
 
   const syncRes = await pushCloudVault(payload, sessionState.adminSecret);
+  if (syncRes && syncRes.timeOffsetMs !== null && Number.isFinite(syncRes.timeOffsetMs)) {
+    sessionState.timeOffsetMs = syncRes.timeOffsetMs;
+  }
 
   if (syncRes && syncRes.conflict && syncRes.remotePayload) {
     // Merge conflict resolution
@@ -528,7 +524,9 @@ document.addEventListener('keydown', (e) => {
     if (dashboardView.style.display !== 'none') searchInput.focus();
   }
   if (e.key === 'Escape') {
-    if (addModal.classList.contains('active')) {
+    if (helpModal && helpModal.classList.contains('active')) {
+      helpModal.classList.remove('active');
+    } else if (addModal.classList.contains('active')) {
       addModal.classList.remove('active');
     } else if (deleteConfirmModal.classList.contains('active')) {
       deleteConfirmModal.classList.remove('active');
@@ -537,6 +535,23 @@ document.addEventListener('keydown', (e) => {
     }
   }
 });
+
+// Help Modal Listeners
+if (helpBtn && helpModal) {
+  helpBtn.addEventListener('click', () => {
+    helpModal.classList.add('active');
+  });
+}
+if (closeHelpModalBtn && helpModal) {
+  closeHelpModalBtn.addEventListener('click', () => {
+    helpModal.classList.remove('active');
+  });
+}
+if (confirmHelpBtn && helpModal) {
+  confirmHelpBtn.addEventListener('click', () => {
+    helpModal.classList.remove('active');
+  });
+}
 
 // Auto lock on tab hidden over 60s
 document.addEventListener('visibilitychange', () => {

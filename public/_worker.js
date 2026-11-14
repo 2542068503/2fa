@@ -6,14 +6,27 @@ export default {
     if (url.pathname === '/api/sync') {
       const kv = env.VAULT_KV;
       const authHeader = request.headers.get('Authorization') || '';
+
+      const corsHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Expose-Headers': 'Date',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache'
+      };
+
+      if (request.method === 'OPTIONS') {
+        return new Response(null, { headers: corsHeaders });
+      }
       
       if (!authHeader.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ error: 'UNAUTHORIZED' }), {
           status: 401,
           headers: { 
             'Content-Type': 'application/json', 
-            'Access-Control-Allow-Origin': '*',
-            'Date': new Date().toUTCString()
+            'Date': new Date().toUTCString(),
+            ...corsHeaders
           }
         });
       }
@@ -26,8 +39,8 @@ export default {
           status: 401,
           headers: { 
             'Content-Type': 'application/json', 
-            'Access-Control-Allow-Origin': '*',
-            'Date': new Date().toUTCString()
+            'Date': new Date().toUTCString(),
+            ...corsHeaders
           }
         });
       }
@@ -45,9 +58,8 @@ export default {
           headers: {
             'Content-Type': 'application/json',
             'Date': new Date().toUTCString(),
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'no-store',
-            'Vary': 'Authorization'
+            'Vary': 'Authorization',
+            ...corsHeaders
           }
         });
       }
@@ -66,25 +78,20 @@ export default {
             status: 200,
             headers: { 
               'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*'
+              'Date': new Date().toUTCString(),
+              ...corsHeaders
             }
           });
         } catch (e) {
           return new Response(JSON.stringify({ error: e.message }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 
+              'Content-Type': 'application/json',
+              'Date': new Date().toUTCString(),
+              ...corsHeaders
+            }
           });
         }
-      }
-
-      if (request.method === 'OPTIONS') {
-        return new Response(null, {
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-          }
-        });
       }
     }
 

@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>2FA Authenticator - 安全验证器</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-  <link rel="manifest" href="./manifest.json" />
-  <script type="module" crossorigin src="./assets/index-DYYedDUF.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-Bx4qa93K.css">
+  <link rel="manifest" href="./manifest.json" />
+  <script type="module" crossorigin src="./assets/index-BHg2Lt4J.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BlSAPsYx.css">
 </head>
 <body>
   <div class="app-container">
@@ -23,6 +23,13 @@
         <span>2FA Vault</span>
       </div>
       <div class="header-actions">
+        <button id="helpBtn" class="btn-icon-only" title="使用说明" aria-label="Help & Guide">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </button>
         <button id="themeToggleBtn" class="btn-icon-only" title="切换暗色/亮色主题" aria-label="Toggle Theme">
           <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="5"></circle>
@@ -34,12 +41,6 @@
             <line x1="21" y1="12" x2="23" y2="12"></line>
             <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-          </svg>
-        </button>
-        <button id="settingsBtn" class="btn-icon-only" style="display: none;" title="设置与修改主密码" aria-label="Settings">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
         </button>
         <button id="lockBtn" class="btn-ghost" style="display: none;" title="锁定加密库">
@@ -54,37 +55,48 @@
 
     <!-- Lock View -->
     <div id="lockView" class="glass-panel lock-wrapper">
-      <div class="lock-shield-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-        </svg>
-      </div>
-      <h2 id="lockTitle" class="lock-title">解锁密码库</h2>
-      <p id="lockDesc" class="lock-subtitle">输入您的主密码（Master Password）以解密 2FA 动态验证码。</p>
-      
-      <div class="input-wrapper">
-        <input type="password" id="masterPasswordInput" class="input-control" placeholder="输入主密码" autocomplete="current-password" autofocus />
-        <button id="togglePwVisibility" class="input-icon-end" type="button" aria-label="Toggle password visibility">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
+      <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+        <div class="lock-shield-icon" style="margin: 0; width: 48px; height: 48px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
           </svg>
-        </button>
+        </div>
+        <h2 id="lockTitle" class="lock-title" style="margin: 0;">解锁验证器</h2>
+      </div>
+      
+      <p id="lockDesc" class="lock-subtitle">请输入您的访问秘钥以进入系统。</p>
+      
+      <div style="margin-top: 1.5rem; text-align: left;">
+        <label for="masterPasswordInput" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 0.5rem;">鉴权秘钥</label>
+        <div class="input-wrapper" style="margin-bottom: 1.25rem;">
+          <input type="password" id="masterPasswordInput" class="input-control" placeholder="输入密码" autocomplete="new-password" spellcheck="false" autofocus />
+          <button id="togglePwVisibility" class="input-icon-end" type="button" aria-label="Toggle password visibility">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
       </div>
 
-      <button id="unlockBtn" class="btn-primary" style="width: 100%;">
-        <span>解锁验证器</span>
+      <div id="lockError" style="color: var(--destructive); margin-bottom: 1rem; font-size: 0.9rem; font-weight: 500; display: none;"></div>
+
+      <button id="unlockBtn" class="btn-primary" style="width: 100%; justify-content: center;">
+        <span>登入 (Enter)</span>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="5" y1="12" x2="19" y2="12"></line>
           <polyline points="12 5 19 12 12 19"></polyline>
         </svg>
       </button>
-      <div id="lockError" style="color: var(--destructive); margin-top: 1rem; font-size: 0.9rem; font-weight: 500; display: none;"></div>
+      
+      <div style="text-align: center; color: var(--text-muted); font-size: 0.75rem; margin-top: 2rem;">v1.1.0</div>
     </div>
 
     <!-- Main Dashboard View -->
     <div id="dashboardView" style="display: none;">
-      <div class="toolbar">
+      <!-- Sticky Glass Header Area -->
+      <div class="sticky-glass-header">
+        <div class="toolbar">
         <div class="search-box">
           <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
@@ -100,6 +112,24 @@
           </svg>
           <span>添加账号</span>
         </button>
+        <label for="importFileInput" class="btn-ghost" title="导入 JSON 数据" style="cursor: pointer; margin: 0; padding: 0 1rem; display: flex; align-items: center; justify-content: center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span style="margin-left: 0.5rem;" class="hide-mobile">导入</span>
+        </label>
+        <input type="file" id="importFileInput" accept=".json" style="display: none;" />
+        
+        <button id="exportBtn" class="btn-ghost" title="导出数据为 JSON">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>导出</span>
+        </button>
         <label for="qrFileInput" class="btn-ghost" style="cursor: pointer;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="7"></rect>
@@ -109,8 +139,9 @@
           </svg>
           <span>扫码识别</span>
         </label>
-        <input type="file" id="qrFileInput" accept="image/*" style="display: none;" />
+        <input type="file" id="qrFileInput" accept="image/*" capture="environment" style="display: none;" />
       </div>
+      </div> <!-- End Sticky Glass Header -->
 
       <div id="accountList" class="accounts-grid"></div>
     </div>
@@ -161,43 +192,6 @@
     </div>
   </div>
 
-  <!-- Settings / Change Master Password Modal -->
-  <div id="settingsModal" class="modal-backdrop">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 class="modal-title">修改主密码</h3>
-        <button id="closeSettingsModalBtn" class="btn-icon-only" style="border: none; background: transparent;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-
-      <div class="input-wrapper">
-        <label style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">当前主密码</label>
-        <input type="password" id="currentPasswordInput" class="input-control" placeholder="输入当前主密码" />
-      </div>
-
-      <div class="input-wrapper">
-        <label style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">新主密码</label>
-        <input type="password" id="newPasswordInput" class="input-control" placeholder="输入新主密码" />
-      </div>
-
-      <div class="input-wrapper">
-        <label style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">确认新主密码</label>
-        <input type="password" id="confirmNewPasswordInput" class="input-control" placeholder="再次输入新主密码" />
-      </div>
-
-      <div id="settingsError" style="color: var(--destructive); margin-bottom: 1rem; font-size: 0.9rem; font-weight: 500; display: none;"></div>
-
-      <div class="modal-actions">
-        <button id="cancelSettingsBtn" class="btn-ghost">取消</button>
-        <button id="updatePasswordBtn" class="btn-primary">确认更新密码</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Delete Account Confirmation Modal -->
   <div id="deleteConfirmModal" class="modal-backdrop">
     <div class="modal-content" style="max-width: 400px; text-align: center;">
@@ -219,6 +213,52 @@
     </div>
   </div>
 
+  <!-- Help Modal -->
+  <div id="helpModal" class="modal-backdrop">
+    <div class="modal-content help-modal-content">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div class="help-badge-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+          <h3 class="modal-title">使用说明与排错指南</h3>
+        </div>
+        <button id="closeHelpModalBtn" class="btn-icon-only" style="border: none; background: transparent;" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="help-body">
+        <div class="help-section">
+          <h4>常见操作</h4>
+          <p>点击任意验证码或卡片直接复制到剪贴板。按键盘 <code>/</code> 快速搜索，按 <code>Esc</code> 关闭弹窗或锁定。</p>
+        </div>
+
+        <div class="help-section">
+          <h4>验证码错误与网络代理（TUN 模式）</h4>
+          <p>动态验证码严格基于当前时间的 UTC 秒数生成。当开启 TUN 或代理时，网络首包握手可能有延迟抖动，系统已启用往返时间（RTT）智能补偿。</p>
+          <p>若验证码仍提示错误，多半是操作系统本地时钟有偏差。在 Windows 设置的“日期和时间”中点击“立即同步”，校准本地时钟即可解决。</p>
+        </div>
+
+        <div class="help-section">
+          <h4>数据安全与备份</h4>
+          <p>所有账号密钥均在本地经 AES-256-GCM 强加密后才同步到云端 KV，服务器不保存明文密码。建议定期使用“导出”保存一份 JSON 离线备份。</p>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 1.5rem; justify-content: flex-end;">
+        <button id="confirmHelpBtn" class="btn-primary" style="min-width: 90px;">知道了</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Banner -->
   <div id="toast" class="toast-banner">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -226,6 +266,6 @@
     </svg>
     <span id="toastText">验证码已复制到剪贴板！</span>
   </div>
-
+
 </body>
 </html>

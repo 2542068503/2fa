@@ -8,6 +8,7 @@ A modern, zero-trust, end-to-end encrypted (E2EE) 2FA (TOTP) web application wit
 - **Multi-Algorithm Support**: Standard RFC 6238 (SHA1, SHA256, SHA512) and Steam Guard 5-character tokens.
 - **Offline PWA**: Full offline calculation support with Web App Manifest and Service Worker.
 - **Light & Dark Theme**: Sleek glassmorphism visual design with system theme detection.
+- **Smart Time Calibration**: RTT network latency compensation for accurate TOTP calculation even under proxy or TUN modes.
 - **QR Code Scanning**: Import accounts directly from QR code images or Google Authenticator migration URIs.
 
 ## Cloudflare Pages Deployment

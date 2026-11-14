@@ -22,6 +22,13 @@
         <span>2FA Vault</span>
       </div>
       <div class="header-actions">
+        <button id="helpBtn" class="btn-icon-only" title="使用说明" aria-label="Help & Guide">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </button>
         <button id="themeToggleBtn" class="btn-icon-only" title="切换暗色/亮色主题" aria-label="Toggle Theme">
           <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="5"></circle>
@@ -81,7 +88,7 @@
         </svg>
       </button>
       
-      <div style="text-align: center; color: var(--text-muted); font-size: 0.75rem; margin-top: 2rem;">v1.0.0</div>
+      <div style="text-align: center; color: var(--text-muted); font-size: 0.75rem; margin-top: 2rem;">v1.1.0</div>
     </div>
 
     <!-- Main Dashboard View -->
@@ -205,6 +212,52 @@
     </div>
   </div>
 
+  <!-- Help Modal -->
+  <div id="helpModal" class="modal-backdrop">
+    <div class="modal-content help-modal-content">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div class="help-badge-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+          <h3 class="modal-title">使用说明与排错指南</h3>
+        </div>
+        <button id="closeHelpModalBtn" class="btn-icon-only" style="border: none; background: transparent;" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="help-body">
+        <div class="help-section">
+          <h4>常见操作</h4>
+          <p>点击任意验证码或卡片直接复制到剪贴板。按键盘 <code>/</code> 快速搜索，按 <code>Esc</code> 关闭弹窗或锁定。</p>
+        </div>
+
+        <div class="help-section">
+          <h4>验证码错误与网络代理（TUN 模式）</h4>
+          <p>动态验证码严格基于当前时间的 UTC 秒数生成。当开启 TUN 或代理时，网络首包握手可能有延迟抖动，系统已启用往返时间（RTT）智能补偿。</p>
+          <p>若验证码仍提示错误，多半是操作系统本地时钟有偏差。在 Windows 设置的“日期和时间”中点击“立即同步”，校准本地时钟即可解决。</p>
+        </div>
+
+        <div class="help-section">
+          <h4>数据安全与备份</h4>
+          <p>所有账号密钥均在本地经 AES-256-GCM 强加密后才同步到云端 KV，服务器不保存明文密码。建议定期使用“导出”保存一份 JSON 离线备份。</p>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 1.5rem; justify-content: flex-end;">
+        <button id="confirmHelpBtn" class="btn-primary" style="min-width: 90px;">知道了</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Banner -->
   <div id="toast" class="toast-banner">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -213,6 +266,6 @@
     <span id="toastText">验证码已复制到剪贴板！</span>
   </div>
 
-  <script type="module" src="./src/js/app.js?v=1.0.0"></script>
+  <script type="module" src="./src/js/app.js?v=1.1.0"></script>
 </body>
 </html>

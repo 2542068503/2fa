@@ -15,7 +15,7 @@ export function parseBase32(base32) {
 
   const bytes = new Uint8Array(Math.floor(bits.length / 8));
   for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(bits.substr(i * 8, 8), 2);
+    bytes[i] = parseInt(bits.slice(i * 8, (i + 1) * 8), 2);
   }
   return bytes.length > 0 ? bytes : new Uint8Array(8);
 }
@@ -32,7 +32,8 @@ export async function generateTOTP(secretBase32, options = {}) {
     timestamp = Date.now()
   } = options;
 
-  const effectiveTime = timestamp + timeOffsetMs;
+  const safeOffsetMs = Number.isFinite(timeOffsetMs) ? timeOffsetMs : 0;
+  const effectiveTime = timestamp + safeOffsetMs;
   const counter = Math.floor(effectiveTime / 1000 / period);
 
   // Convert counter to 8-byte big-endian ArrayBuffer
@@ -85,6 +86,7 @@ export async function generateTOTP(secretBase32, options = {}) {
 
 export function getSecondsRemaining(period = 30, timeOffsetMs = 0) {
   const effectiveTime = Date.now() + timeOffsetMs;
-  const secondsInPeriod = Math.floor(effectiveTime / 1000) % period;
+  const seconds = Math.floor(effectiveTime / 1000);
+  const secondsInPeriod = ((seconds % period) + period) % period;
   return period - secondsInPeriod;
 }

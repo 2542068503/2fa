@@ -6,31 +6,60 @@ export default {
     if (url.pathname === '/api/sync') {
       const kv = env.VAULT_KV;
       const authHeader = request.headers.get('Authorization') || '';
+
+      const corsHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Expose-Headers': 'Date',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache'
+      };
+
+      if (request.method === 'OPTIONS') {
+        return new Response(null, { headers: corsHeaders });
+      }
       
       if (!authHeader.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ error: 'UNAUTHORIZED' }), {
           status: 401,
           headers: { 
             'Content-Type': 'application/json', 
-            'Access-Control-Allow-Origin': '*',
-            'Date': new Date().toUTCString()
+            'Date': new Date().toUTCString(),
+            ...corsHeaders
           }
         });
       }
 
       const token = authHeader.substring(7);
 
+      // Strict Server-Side Authentication against env.ADMIN
+      if (!env.ADMIN || token !== env.ADMIN) {
+        return new Response(JSON.stringify({ error: 'UNAUTHORIZED_ADMIN' }), {
+          status: 401,
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Date': new Date().toUTCString(),
+            ...corsHeaders
+          }
+        });
+      }
+
       if (request.method === 'GET') {
         let data = null;
         if (kv) {
-          data = await kv.get(`vault:${token}`, { type: 'json' });
+          const existing = await kv.get('vault:singleton', { type: 'json' });
+          if (existing) {
+            data = existing;
+          }
         }
         return new Response(JSON.stringify({ data }), {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
             'Date': new Date().toUTCString(),
-            'Access-Control-Allow-Origin': '*'
+            'Vary': 'Authorization',
+            ...corsHeaders
           }
         });
       }
@@ -41,45 +70,28 @@ export default {
           const { payload } = body;
 
           if (kv && payload) {
-            const existing = await kv.get(`vault:${token}`, { type: 'json' });
-            if (existing && existing.updatedAt > payload.updatedAt) {
-              return new Response(
-                JSON.stringify({ error: 'CONFLICT', remotePayload: existing }),
-                {
-                  status: 409,
-                  headers: { 
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                  }
-                }
-              );
-            }
-            await kv.put(`vault:${token}`, JSON.stringify(payload));
+            // Save payload directly to singleton namespace
+            await kv.put('vault:singleton', JSON.stringify(payload));
           }
 
           return new Response(JSON.stringify({ success: true }), {
             status: 200,
             headers: { 
               'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*'
+              'Date': new Date().toUTCString(),
+              ...corsHeaders
             }
           });
         } catch (e) {
           return new Response(JSON.stringify({ error: e.message }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 
+              'Content-Type': 'application/json',
+              'Date': new Date().toUTCString(),
+              ...corsHeaders
+            }
           });
         }
-      }
-
-      if (request.method === 'OPTIONS') {
-        return new Response(null, {
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-          }
-        });
       }
     }
 
