@@ -37,29 +37,8 @@ export async function fetchCloudVault(adminSecret) {
       } catch (_) {}
     }
 
+    // Default to 0ms (Local device clock) to ensure 100% exact parity with 2fa.fun, Google Authenticator, etc.
     let timeOffsetMs = 0;
-    const dateHeader = res.headers.get('Date');
-    if (dateHeader) {
-      const serverTime = new Date(dateHeader).getTime();
-      if (!isNaN(serverTime)) {
-        // HTTP Date has 1-second resolution; add 500ms as expected midpoint.
-        // Server generated response at approximately tStart + (rtt / 2).
-        const serverEstimatedNow = serverTime + 500;
-        const clientMidpoint = tStart + (rtt / 2);
-        const calculatedOffset = serverEstimatedNow - clientMidpoint;
-
-        // TUN / Proxy safeguard:
-        // 1. If RTT is excessively large (> 3500ms), network jitter is too unstable; trust local clock.
-        // 2. If calculated offset is within +/- 2500ms, the local system clock is already accurate enough for TOTP (30s window).
-        //    Applying a noisy offset from HTTP headers would do more harm than good.
-        if (rtt <= 3500 && Math.abs(calculatedOffset) >= 2500) {
-          timeOffsetMs = Math.round(calculatedOffset);
-          console.info(`[TimeSync] Applied clock calibration offset: ${timeOffsetMs}ms (RTT: ${rtt}ms)`);
-        } else {
-          console.info(`[TimeSync] Clock in sync or RTT too high (Offset: ${Math.round(calculatedOffset)}ms, RTT: ${rtt}ms), using local clock.`);
-        }
-      }
-    }
 
     if (res.status === 200) {
       const json = await res.json();
@@ -89,23 +68,7 @@ export async function pushCloudVault(payload, adminSecret) {
     const tEnd = Date.now();
     const rtt = Math.max(0, tEnd - tStart);
 
-    let timeOffsetMs = null;
-    const dateHeader = res.headers.get('Date');
-    if (dateHeader) {
-      const serverTime = new Date(dateHeader).getTime();
-      if (!isNaN(serverTime)) {
-        const serverEstimatedNow = serverTime + 500;
-        const clientMidpoint = tStart + (rtt / 2);
-        const calculatedOffset = serverEstimatedNow - clientMidpoint;
-        if (rtt <= 3500 && Math.abs(calculatedOffset) >= 2500) {
-          timeOffsetMs = Math.round(calculatedOffset);
-        } else if (rtt <= 3500) {
-          timeOffsetMs = 0;
-        }
-      }
-    }
-
-    return { success: res.status === 200, res, timeOffsetMs };
+    return { success: res.status === 200, res, timeOffsetMs: 0 };
   } catch (err) {
     return { success: false, error: err.message, timeOffsetMs: null };
   }

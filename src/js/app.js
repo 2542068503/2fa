@@ -588,13 +588,53 @@ addAccountBtn.addEventListener('click', () => {
 closeAddModalBtn.addEventListener('click', () => addModal.classList.remove('active'));
 cancelAddBtn.addEventListener('click', () => addModal.classList.remove('active'));
 
+const addSecretInput = document.getElementById('addSecretInput');
+addSecretInput.addEventListener('input', () => {
+  const val = addSecretInput.value.trim();
+  if (val.startsWith('otpauth://')) {
+    try {
+      const parsedList = parseOtpauthUri(val);
+      if (parsedList && parsedList.length > 0) {
+        const item = parsedList[0];
+        addSecretInput.value = item.secret;
+        if (item.issuer && !document.getElementById('addIssuerInput').value) {
+          document.getElementById('addIssuerInput').value = item.issuer;
+        }
+        if (item.account && !document.getElementById('addAccountInput').value) {
+          document.getElementById('addAccountInput').value = item.account;
+        }
+        if (item.algo) {
+          document.getElementById('addAlgoSelect').value = item.algo;
+        }
+      }
+    } catch (_) {}
+  }
+});
+
 saveAccountBtn.addEventListener('click', async () => {
-  const issuer = document.getElementById('addIssuerInput').value || 'Unknown';
-  const account = document.getElementById('addAccountInput').value || 'Account';
-  const secret = document.getElementById('addSecretInput').value;
-  const algo = document.getElementById('addAlgoSelect').value || 'SHA1';
+  let issuer = document.getElementById('addIssuerInput').value.trim() || 'Unknown';
+  let account = document.getElementById('addAccountInput').value.trim() || 'Account';
+  let secret = document.getElementById('addSecretInput').value.trim();
+  let algo = document.getElementById('addAlgoSelect').value || 'SHA1';
 
   if (!secret) return;
+
+  // Auto extract if secret is an otpauth URI or contains secret=
+  if (secret.startsWith('otpauth://') || secret.includes('secret=')) {
+    try {
+      const parsedList = parseOtpauthUri(secret);
+      if (parsedList && parsedList.length > 0) {
+        const item = parsedList[0];
+        secret = item.secret;
+        if (item.issuer && issuer === 'Unknown') issuer = item.issuer;
+        if (item.account && account === 'Account') account = item.account;
+        if (item.algo) algo = item.algo;
+      }
+    } catch (_) {
+      const m = secret.match(/secret=([A-Za-z0-9=]+)/i);
+      if (m && m[1]) secret = m[1];
+    }
+  }
 
   saveAccountBtn.disabled = true;
   saveAccountBtn.textContent = '加密同步中...';

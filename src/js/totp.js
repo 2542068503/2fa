@@ -1,8 +1,18 @@
 // Base32 Decoder
 export function parseBase32(base32) {
   if (!base32) return new Uint8Array(8);
+
+  let raw = String(base32).trim();
+  // If the secret is an otpauth URI or contains secret=, extract the secret parameter
+  if (raw.includes('secret=')) {
+    const m = raw.match(/[?&]secret=([A-Za-z0-9=]+)/i) || raw.match(/secret=([A-Za-z0-9=]+)/i);
+    if (m && m[1]) {
+      raw = m[1];
+    }
+  }
+
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-  let cleaned = base32.replace(/[\s=-]/g, '').toUpperCase();
+  let cleaned = raw.replace(/[\s=-]/g, '').toUpperCase();
   let bits = '';
 
   for (let i = 0; i < cleaned.length; i++) {
