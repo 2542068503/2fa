@@ -28,6 +28,15 @@ export async function fetchCloudVault(adminSecret) {
       return { data: null, timeOffsetMs: 0, error: 'UNAUTHORIZED_ADMIN' };
     }
 
+    if (res.status === 500) {
+      try {
+        const errJson = await res.json();
+        if (errJson && errJson.error === 'MISSING_ENV_ADMIN') {
+          return { data: null, timeOffsetMs: 0, error: 'MISSING_ENV_ADMIN' };
+        }
+      } catch (_) {}
+    }
+
     let timeOffsetMs = 0;
     const dateHeader = res.headers.get('Date');
     if (dateHeader) {

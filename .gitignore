@@ -3,8 +3,8 @@ node_modules/
 .pnp
 .pnp.js
 
-# Build output
-dist/
+# Build output (keep dist in repo for zero-config deployments)
+# dist/
 dist-ssr/
 *.local
 

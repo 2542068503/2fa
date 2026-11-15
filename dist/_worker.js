@@ -31,10 +31,24 @@ export default {
         });
       }
 
-      const token = authHeader.substring(7);
+      const token = authHeader.substring(7).trim();
+
+      // Check if ADMIN environment variable is configured in Cloudflare Pages
+      if (!env.ADMIN) {
+        return new Response(JSON.stringify({ error: 'MISSING_ENV_ADMIN', message: 'Cloudflare Pages 未配置 ADMIN 环境变量' }), {
+          status: 500,
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Date': new Date().toUTCString(),
+            ...corsHeaders
+          }
+        });
+      }
+
+      const expectedAdmin = String(env.ADMIN).trim();
 
       // Strict Server-Side Authentication against env.ADMIN
-      if (!env.ADMIN || token !== env.ADMIN) {
+      if (token !== expectedAdmin) {
         return new Response(JSON.stringify({ error: 'UNAUTHORIZED_ADMIN' }), {
           status: 401,
           headers: { 

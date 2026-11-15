@@ -98,6 +98,9 @@ async function handleUnlockOrCreate() {
     // Query Cloud KV using plaintext password (ADMIN secret auth)
     const { data: cloudData, timeOffsetMs, error } = await fetchCloudVault(password);
     
+    if (error === 'MISSING_ENV_ADMIN') {
+      throw new Error('MISSING_ENV_ADMIN');
+    }
     if (error === 'UNAUTHORIZED_ADMIN') {
       throw new Error('UNAUTHORIZED_ADMIN');
     }
@@ -136,11 +139,13 @@ async function handleUnlockOrCreate() {
 
     showDashboard();
   } catch (err) {
-    if (err.message !== 'UNAUTHORIZED_ADMIN') {
+    if (err.message !== 'UNAUTHORIZED_ADMIN' && err.message !== 'MISSING_ENV_ADMIN') {
       console.error(err);
     }
-    if (err.message === 'UNAUTHORIZED_ADMIN') {
-      lockError.textContent = '密码错误';
+    if (err.message === 'MISSING_ENV_ADMIN') {
+      lockError.innerHTML = '服务端未配置秘钥：请在 Cloudflare Pages 设置中添加环境变量 <code>ADMIN</code> 并重试部署。';
+    } else if (err.message === 'UNAUTHORIZED_ADMIN') {
+      lockError.innerHTML = '密码错误：输入的秘钥与 Cloudflare 环境变量 <code>ADMIN</code> 不一致。<br><span style="font-size: 0.8rem; opacity: 0.85; font-weight: normal;">(提示：若刚刚在控制台添加或修改了环境变量，必须在 Pages 部署页面点击一次“重试部署”才能生效)</span>';
     } else if (err.message && err.message.includes('reading \'digest\'')) {
       lockError.textContent = '安全环境受限：必须使用 https:// 或 localhost 访问才能使用加密功能！';
     } else {
